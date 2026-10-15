@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22OpenStride%20%5Cu2014%20GPS%20Running%20%26%20Energy%20Tracker%22%2C%20%22short_name%22%3A%20%22OpenStride%22%2C%20%22description%22%3A%20%22Real-time%20GPS%20running%20tracker%2C%20custom%20countdown%20timer%2C%20calorie%20tracker%20%26%20smart%20exercise/rest%20coach.%22%2C%20%22start_url%22%3A%20%22./index.html%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22orientation%22%3A%20%22portrait%22%2C%20%22background_color%22%3A%20%22%23090d16%22%2C%20%22theme_color%22%3A%20%22%2310b981%22%2C%20%22icons%22%3A%20%5B%7B%22src%22%3A%20%22data%3Aimage/svg+xml,%253Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20192%20192%27%253E%253Crect%20width%3D%27192%27%20height%3D%27192%27%20rx%3D%2742%27%20fill%3D%27%252310b981%27/%253E%253Cpath%20d%3D%27M108%2032L44%20108h48v52l64-76h-48V32z%27%20fill%3D%27%2523090d16%27/%253E%253C/svg%253E%22%2C%20%22sizes%22%3A%20%22192x192%22%2C%20%22type%22%3A%20%22image/svg+xml%22%2C%20%22purpose%22%3A%20%22any%20maskable%22%7D%5D%7D" />
-  <title>OpenStride — Real-Time GPS Running, Timer & Smart Energy Recovery Tracker</title>
+  <title>OpenStride — Real-Time GPS Running </title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -150,7 +150,7 @@
           <!-- Timer & Run Mode Card -->
           <div class="glass-card rounded-2xl p-5 sm:p-6 space-y-5">
             <!-- Mode & Pace Controls -->
-            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
               <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
                 <button id="modeStopwatchBtn" type="button" onclick="setRunMode('stopwatch')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition">
                   ⏱️ Free Stopwatch
