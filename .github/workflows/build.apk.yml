@@ -19,14 +19,28 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
+    - name: Find and build APK
+      run: |
+        # Agar gradlew root me nahi hai, toh use dhoond kar execute karein
+        if [ -f "./gradlew" ]; then
+          chmod +x gradlew
+          ./gradlew assembleDebug
+        else
+          # Agar zip kisi folder ke andar extract hui hai
+          PROJECT_DIR=$(find . -maxdepth 2 -name "gradlew" -exec dirname {} \;)
+          if [ -n "$PROJECT_DIR" ]; then
+            cd "$PROJECT_DIR"
+            chmod +x gradlew
+            ./gradlew assembleDebug
+          else
+            echo "Error: gradlew file not found anywhere!"
+            exit 1
+          fi
+        fi
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
-        path: app/build/outputs/apk/debug/app-debug.apk
+        path: '**/build/outputs/apk/debug/app-debug.apk'
+        if-no-files-found: error
