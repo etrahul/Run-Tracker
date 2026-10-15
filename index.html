@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#10b981" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.json" />
+  <title>OpenStride — Real-Time GPS Running, Timer & Smart Energy Recovery Tracker</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', ' system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #090d16;
+      color: #f1f5f9;
+      overflow-x: hidden;
+    }
+    .mono-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.35);
+    }
+    .glow-amber {
+      box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.35);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- Toast Notification Banner -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <svg class="w-6 h-6 text-slate-950" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-extrabold tracking-tight text-white">OpenStride</h1>
+            <span class="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">MIT Open-Source</span>
+          </div>
+          <p class="text-xs text-slate-400">Real-Time GPS Run Tracker, Custom Timer &amp; Energy Recovery Coach</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800" aria-label="Main Tabs">
+        <button id="tabBtnTracker" type="button" onclick="switchTab('tracker')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-emerald-500 text-slate-950 shadow">
+          Live Tracker &amp; Timer
+        </button>
+        <button id="tabBtnEnergy" type="button" onclick="switchTab('energy')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white">
+          Energy &amp; Rest Coach
+        </button>
+        <button id="tabBtnHistory" type="button" onclick="switchTab('history')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white">
+          History &amp; Open-Source
+        </button>
+      </nav>
+
+      <!-- Quick Status & Utility Controls -->
+      <div class="flex items-center gap-2">
+        <button id="unitToggleBtn" type="button" onclick="toggleDistanceUnit()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-200 hover:border-emerald-500/50 transition" title="Switch between Kilometers and Miles">
+          Unit: <span id="unitLabel" class="text-emerald-400 font-bold">KM</span>
+        </button>
+        <button id="soundToggleBtn" type="button" onclick="toggleAudioAlerts()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-200 hover:border-emerald-500/50 transition flex items-center gap-1" title="Toggle voice/beep timer alerts">
+          <span id="soundIcon">🔔</span> <span id="soundLabel" class="hidden sm:inline">Audio On</span>
+        </button>
+        <button id="androidInstallHeaderBtn" type="button" onclick="triggerAndroidInstallOrGuide()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition">
+          📲 Android / GitHub
+        </button>
+        <button id="openSourceModalBtn" type="button" onclick="toggleModal('specModal', true)" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 transition">
+          Export / Docs
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Top Smart Coach Summary Strip (Always Visible) -->
+    <section class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-emerald-500 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      <div class="flex items-start gap-3.5">
+        <div id="energyBadgeOrb" class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 flex flex-col items-center justify-center shrink-0">
+          <span id="topEnergyPct" class="text-sm font-extrabold text-emerald-400 mono-num">82%</span>
+          <span class="text-[9px] uppercase tracking-wider text-slate-400">Energy</span>
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Smart Exercise &amp; Rest Advisor</span>
+            <span id="readinessStatusPill" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">High Readiness</span>
+          </div>
+          <p id="topCoachHeadline" class="text-sm sm:text-base font-semibold text-white mt-0.5">
+            Recommended Today: 30 min Moderate Run (~4.8 km) • Follow with 14 hrs rest &amp; 7.5 hrs sleep.
+          </p>
+          <p id="topCoachSubtext" class="text-xs text-slate-400 mt-0.5">
+            Today's Burn: <strong id="topTodayCalories" class="text-amber-400 mono-num">310 kcal</strong> | Hydration Need: <strong id="topHydrationNeed" class="text-sky-400 mono-num">650 mL</strong> | Next Goal: <strong id="topGoalText" class="text-slate-200">Steady Aerobic Zone</strong>
+          </p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
+        <button type="button" onclick="applyRecommendedTimer()" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition">
+          ⚡ Apply Suggested Run to Timer
+        </button>
+        <button type="button" onclick="switchTab('energy')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+          View Full Energy &amp; Rest Plan →
+        </button>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: LIVE GPS TRACKER & CUSTOM TIMER     -->
+    <!-- ========================================== -->
+    <div id="tabPanelTracker" class="space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Timer, Mode Config & Primary Telemetry (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+
+          <!-- Timer & Run Mode Card -->
+          <div class="glass-card rounded-2xl p-5 sm:p-6 space-y-5">
+            <!-- Mode & Pace Controls -->
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+              <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                <button id="modeStopwatchBtn" type="button" onclick="setRunMode('stopwatch')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition">
+                  ⏱️ Free Stopwatch
+                </button>
+                <button id="modeCountdownBtn" type="button" onclick="setRunMode('countdown')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition">
+                  ⏳ Set Timer (Countdown)
+                </button>
+              </div>
+
+              <!-- Intensity / Pace Selector (For Simulation & MET tuning) -->
+              <div class="flex items-center gap-2">
+                <label for="pacePresetSelect" class="text-xs text-slate-400 font-medium">Run Intensity:</label>
+                <select id="pacePresetSelect" onchange="updateIntensityPreset(this.value)" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500">
+                  <option value="easy">Easy Recovery Walk/Jog (7:00 /km • 7.0 MET)</option>
+                  <option value="moderate" selected>Moderate Run (5:30 /km • 9.8 MET)</option>
+                  <option value="tempo">Fast Tempo Run (4:35 /km • 11.5 MET)</option>
+                  <option value="sprint">HIIT / Sprint Effort (3:50 /km • 14.0 MET)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Custom Countdown Timer Configuration Panel -->
+            <div id="countdownSetupBox" class="hidden bg-slate-900/90 border border-amber-500/30 rounded-xl p-4 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                  ⏳ Set Target Running Timer (Time Set Karke Track Karein)
+                </span>
+                <span id="timerTargetCalEstimate" class="text-xs text-slate-400">Est. Burn: <strong class="text-amber-300">~343 kcal</strong></span>
+              </div>
+
+              <!-- Quick Preset Pills -->
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-xs text-slate-400 mr-1">Presets:</span>
+                <button type="button" onclick="setTimerPreset(5, 0)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-amber-500/20 hover:text-amber-300 border border-slate-700 transition">5m</button>
+                <button type="button" onclick="setTimerPreset(15, 0)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-amber-500/20 hover:text-amber-300 border border-slate-700 transition">15m</button>
+                <button type="button" onclick="setTimerPreset(20, 0)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-amber-500/20 hover:text-amber-300 border border-slate-700 transition">20m</button>
+                <button type="button" onclick="setTimerPreset(30, 0)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 transition">30m</button>
+                <button type="button" onclick="setTimerPreset(45, 0)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-amber-500/20 hover:text-amber-300 border border-slate-700 transition">45m</button>
+                <button type="button" onclick="setTimerPreset(60, 0)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-amber-500/20 hover:text-amber-300 border border-slate-700 transition">60m</button>
+              </div>
+
+              <!-- Custom Min / Sec Inputs + Distance Goal -->
+              <div class="grid grid-cols-3 gap-3 pt-1">
+                <div>
+                  <label for="inputTimerMin" class="block text-[11px] text-slate-400 mb-1">Minutes (Min)</label>
+                  <input id="inputTimerMin" type="number" min="0" max="300" value="30" onchange="syncCustomTimerInput()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-bold text-white mono-num focus:border-amber-400 focus:outline-none" />
+                </div>
+                <div>
+                  <label for="inputTimerSec" class="block text-[11px] text-slate-400 mb-1">Seconds (Sec)</label>
+                  <input id="inputTimerSec" type="number" min="0" max="59" value="0" onchange="syncCustomTimerInput()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-bold text-white mono-num focus:border-amber-400 focus:outline-none" />
+                </div>
+                <div>
+                  <label for="inputTargetDistKm" class="block text-[11px] text-slate-400 mb-1">Optional Dist Goal (km)</label>
+                  <input id="inputTargetDistKm" type="number" min="0.5" max="100" step="0.5" value="5.0" onchange="syncCustomTimerInput()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-bold text-emerald-400 mono-num focus:border-emerald-400 focus:outline-none" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Main Digital Clock & Countdown Progress Ring -->
+            <div class="relative flex flex-col items-center justify-center py-4 px-3 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-950 border border-slate-800/90">
+              <div class="flex items-center gap-2 mb-1">
+                <span id="liveStatusDot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                <span id="liveStatusLabel" class="text-xs font-bold uppercase tracking-widest text-slate-400">Ready to Start</span>
+              </div>
+
+              <!-- Primary Clock Readout -->
+              <div id="mainClockDisplay" class="text-5xl sm:text-6xl font-extrabold tracking-tight text-white mono-num my-1">
+                00:00:00<span class="text-2xl sm:text-3xl text-emerald-400">.0</span>
+              </div>
+
+              <!-- Sub-readout for Countdown Remaining or Target Distance Progress -->
+              <div class="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400 mt-1">
+                <span id="secondaryTimerText">Elapsed Time: <strong class="text-slate-200 mono-num">00:00</strong></span>
+                <span>•</span>
+                <span>Goal Progress: <strong id="goalProgressPct" class="text-emerald-400 mono-num">0%</strong></span>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="w-full max-w-md h-2 bg-slate-800 rounded-full overflow-hidden mt-3">
+                <div id="timerProgressBar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-200" style="width: 0%"></div>
+              </div>
+
+              <!-- Primary Action Buttons -->
+              <div class="flex flex-wrap items-center justify-center gap-3 mt-5 w-full">
+                <button id="btnStartPause" type="button" onclick="toggleStartPauseRun()" class="px-7 py-3 rounded-xl font-extrabold text-sm sm:text-base bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 transition flex items-center gap-2">
+                  <span id="btnStartPauseIcon">▶</span>
+                  <span id="btnStartPauseText">Start Run</span>
+                </button>
+                <button id="btnLapSplit" type="button" onclick="recordManualLap()" disabled class="px-4 py-3 rounded-xl font-bold text-xs sm:text-sm bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 border border-slate-700 transition">
+                  🚩 Mark Lap
+                </button>
+                <button id="btnFinishRun" type="button" onclick="finishAndSaveRun()" disabled class="px-5 py-3 rounded-xl font-bold text-xs sm:text-sm bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 transition">
+                  ⏹ Finish &amp; Save
+                </button>
+                <button id="btnResetRun" type="button" onclick="resetCurrentRun()" class="px-4 py-3 rounded-xl font-semibold text-xs sm:text-sm bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-300 border border-slate-800 transition">
+                  ↺ Reset
+                </button>
+              </div>
+            </div>
+
+            <!-- 6 Real-Time Telemetry Metric Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Exact Distance</div>
+                <div class="mt-1 flex items-baseline gap-1">
+                  <span id="statDistance" class="text-2xl sm:text-3xl font-extrabold text-white mono-num">0.00</span>
+                  <span id="statDistanceUnit" class="text-xs font-bold text-emerald-400">km</span>
+                </div>
+                <div id="statStepsSub" class="text-[11px] text-slate-400 mt-1 mono-num">0 steps • 0 m elev</div>
+              </div>
+
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Live Pace &amp; Speed</div>
+                <div class="mt-1 flex items-baseline gap-1">
+                  <span id="statPace" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 mono-num">0:00</span>
+                  <span id="statPaceUnit" class="text-xs font-bold text-slate-400">/km</span>
+                </div>
+                <div id="statSpeedSub" class="text-[11px] text-slate-400 mt-1 mono-num">0.0 km/h current</div>
+              </div>
+
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Active Calories</div>
+                <div class="mt-1 flex items-baseline gap-1">
+                  <span id="statCalories" class="text-2xl sm:text-3xl font-extrabold text-amber-400 mono-num">0</span>
+                  <span class="text-xs font-bold text-amber-300">kcal</span>
+                </div>
+                <div id="statFuelSub" class="text-[11px] text-slate-400 mt-1 mono-num">0g carbs • 0g fat</div>
+              </div>
+
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Live Energy Left</div>
+                <div class="mt-1 flex items-baseline gap-1">
+                  <span id="statLiveEnergy" class="text-2xl font-extrabold text-teal-400 mono-num">82%</span>
+                  <span id="statStrainBadge" class="text-[11px] text-slate-400 mono-num">Strain: 0</span>
+                </div>
+                <div class="w-full h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                  <div id="statLiveEnergyBar" class="h-full bg-teal-400 transition-all" style="width: 82%"></div>
+                </div>
+              </div>
+
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Sweat &amp; Hydration</div>
+                <div class="mt-1 flex items-baseline gap-1">
+                  <span id="statSweatLoss" class="text-2xl font-extrabold text-sky-400 mono-num">0</span>
+                  <span class="text-xs font-bold text-sky-300">mL lost</span>
+                </div>
+                <div id="statElectrolyteSub" class="text-[11px] text-slate-400 mt-1">Drink 150mL / 15m</div>
+              </div>
+
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Est. Recovery Need</div>
+                <div class="mt-1 flex items-baseline gap-1">
+                  <span id="statLiveRecoveryHrs" class="text-2xl font-extrabold text-purple-400 mono-num">6</span>
+                  <span class="text-xs font-bold text-purple-300">hrs rest</span>
+                </div>
+                <div id="statZoneSub" class="text-[11px] text-slate-400 mt-1">Zone 2 Aerobic</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kilometer Splits & Manual Laps Table -->
+          <div class="glass-card rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h2 class="text-sm font-bold text-white">Real-Time Splits &amp; Lap Log</h2>
+                <p class="text-xs text-slate-400">Automatic split every 1 km + manual lap markers with calorie &amp; pace data</p>
+              </div>
+              <span id="splitCountBadge" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 mono-num">0 Splits</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[11px]">
+                    <th class="py-2 px-3">Lap / Split</th>
+                    <th class="py-2 px-3">Type</th>
+                    <th class="py-2 px-3 text-right">Distance</th>
+                    <th class="py-2 px-3 text-right">Split Time</th>
+                    <th class="py-2 px-3 text-right">Pace</th>
+                    <th class="py-2 px-3 text-right">Energy Burn</th>
+                  </tr>
+                </thead>
+                <tbody id="splitsTableBody" class="divide-y divide-slate-800/60 text-slate-200 mono-num">
+                  <tr>
+                    <td colspan="6" class="py-6 text-center text-slate-500 font-sans">Start running or click "Mark Lap" to record live GPS splits.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Real-Time GPS Location Tracker & Route Canvas (5 cols) -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="glass-card rounded-2xl p-5 flex flex-col h-full justify-between space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="text-sm font-bold text-white">Real-Time GPS Route Map</h2>
+                  <span id="gpsModePill" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Simulated GPS Active</span>
+                </div>
+                <p class="text-xs text-slate-400">Tracks exact coordinates, heading, kilometer markers &amp; path</p>
+              </div>
+
+              <!-- Toggle Real Browser GPS vs Simulation -->
+              <div class="flex items-center gap-1.5">
+                <button id="btnToggleGpsSource" type="button" onclick="toggleGpsSource()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-700 transition">
+                  📡 Use Real Browser GPS
+                </button>
+              </div>
+            </div>
+
+            <!-- Interactive Route Map Canvas Container -->
+            <div class="relative w-full h-80 sm:h-96 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-inner">
+              <canvas id="gpsRouteCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+
+              <!-- Floating Telemetry Overlay Top-Left -->
+              <div class="absolute top-3 left-3 bg-slate-950/85 backdrop-blur-md border border-slate-800 rounded-xl px-3 py-2 text-[11px] space-y-0.5 pointer-events-none">
+                <div class="text-slate-400">Lat: <strong id="gpsLatText" class="text-emerald-400 mono-num">23.34410° N</strong></div>
+                <div class="text-slate-400">Lng: <strong id="gpsLngText" class="text-emerald-400 mono-num">85.30956° E</strong></div>
+                <div class="text-slate-400">Accuracy: <strong id="gpsAccText" class="text-slate-200 mono-num">±3.8 m</strong> • Waypoints: <strong id="gpsPtsText" class="text-slate-200 mono-num">1</strong></div>
+              </div>
+
+              <!-- Map Zoom & Center Controls Top-Right -->
+              <div class="absolute top-3 right-3 flex flex-col gap-1.5">
+                <button type="button" onclick="adjustMapZoom(1.25)" class="w-8 h-8 rounded-lg bg-slate-900/90 hover:bg-slate-800 text-white font-bold border border-slate-700 flex items-center justify-center shadow" title="Zoom In">+</button>
+                <button type="button" onclick="adjustMapZoom(0.8)" class="w-8 h-8 rounded-lg bg-slate-900/90 hover:bg-slate-800 text-white font-bold border border-slate-700 flex items-center justify-center shadow" title="Zoom Out">−</button>
+                <button type="button" onclick="recenterMap()" class="w-8 h-8 rounded-lg bg-slate-900/90 hover:bg-slate-800 text-emerald-400 font-bold border border-slate-700 flex items-center justify-center shadow text-xs" title="Recenter Map">⌖</button>
+              </div>
+
+              <!-- Legend Overlay Bottom-Left -->
+              <div class="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 bg-slate-950/85 backdrop-blur-md border border-slate-800 rounded-xl px-3 py-1.5 text-[11px]">
+                <div class="flex items-center gap-3">
+                  <span class="flex items-center gap-1 text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> Start</span>
+                  <span class="flex items-center gap-1 text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> Runner</span>
+                  <span class="flex items-center gap-1 text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> KM Split</span>
+                </div>
+                <span id="gpsRouteHeading" class="text-slate-400 mono-num">Heading: NE 48°</span>
+              </div>
+            </div>
+
+            <!-- Live Elevation & Coach Micro-Tip -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-semibold text-slate-300">Live Pacing &amp; Energy Advice</span>
+                <span id="liveHeartRateEst" class="text-rose-400 font-bold mono-num">♥ ~142 bpm</span>
+              </div>
+              <p id="liveInRunAdvice" class="text-xs text-slate-400 leading-relaxed">
+                Press <strong class="text-emerald-400">Start Run</strong> to begin real-time location tracking. Set a custom timer if you want audio alerts when your target run duration finishes.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- TAB 2: ENERGY RECORD & EXERCISE / REST RECOMMENDATION -->
+    <!-- ===================================================== -->
+    <div id="tabPanelEnergy" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Runner Profile, Energy Intake & Biometrics (5 cols) -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="glass-card rounded-2xl p-5 sm:p-6 space-y-5">
+            <div>
+              <h2 class="text-base font-bold text-white">Runner Energy &amp; Biometric Inputs</h2>
+              <p class="text-xs text-slate-400">Customize your body stats, sleep &amp; energy intake to calculate exact exercise &amp; rest needs</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3.5">
+              <div>
+                <label for="profileWeight" class="block text-xs text-slate-400 mb-1">Body Weight (kg)</label>
+                <input id="profileWeight" type="number" min="30" max="200" value="70" onchange="recalculateEnergyAndCoach()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white mono-num focus:border-emerald-500 focus:outline-none" />
+              </div>
+              <div>
+                <label for="profileAge" class="block text-xs text-slate-400 mb-1">Age (Years)</label>
+                <input id="profileAge" type="number" min="12" max="95" value="26" onchange="recalculateEnergyAndCoach()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white mono-num focus:border-emerald-500 focus:outline-none" />
+              </div>
+              <div>
+                <label for="profileSleep" class="block text-xs text-slate-400 mb-1">Last Night Sleep (hrs)</label>
+                <input id="profileSleep" type="number" min="2" max="14" step="0.5" value="7.5" onchange="recalculateEnergyAndCoach()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-emerald-400 mono-num focus:border-emerald-500 focus:outline-none" />
+              </div>
+              <div>
+                <label for="profileFitness" class="block text-xs text-slate-400 mb-1">Runner Level</label>
+                <select id="profileFitness" onchange="recalculateEnergyAndCoach()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none">
+                  <option value="beginner">Beginner (15-20 km/wk)</option>
+                  <option value="intermediate" selected>Intermediate (30-45 km/wk)</option>
+                  <option value="advanced">Advanced (60+ km/wk)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Fatigue / RPE Slider -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <label for="profileRpe" class="font-semibold text-slate-300">Muscle Soreness / Fatigue Level (1-10)</label>
+                <span id="profileRpeLabel" class="font-bold text-amber-400 mono-num">3 / 10 (Fresh)</span>
+              </div>
+              <input id="profileRpe" type="range" min="1" max="10" value="3" oninput="recalculateEnergyAndCoach()" class="w-full accent-emerald-500 cursor-pointer" />
+              <div class="flex justify-between text-[10px] text-slate-500">
+                <span>1 — Fully Rested</span>
+                <span>5 — Moderate Effort</span>
+                <span>10 — Exhausted</span>
+              </div>
+            </div>
+
+            <!-- Energy Intake (Food/Calories) & Hydration Loggers -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-white">Daily Nutrition &amp; Hydration Tracker</span>
+                <span class="text-[11px] text-slate-400">BMR: <strong id="bmrValueText" class="text-slate-200 mono-num">1,680 kcal</strong></span>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-2.5">
+                  <div class="text-[11px] text-slate-400">Food Energy Logged</div>
+                  <div class="text-lg font-extrabold text-amber-400 mono-num mt-0.5"><span id="intakeCaloriesText">1850</span> kcal</div>
+                  <div class="flex gap-1.5 mt-2">
+                    <button type="button" onclick="adjustEnergyIntake(250)" class="flex-1 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-bold transition">+250 kcal</button>
+                    <button type="button" onclick="adjustEnergyIntake(-250)" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold transition">−</button>
+                  </div>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-2.5">
+                  <div class="text-[11px] text-slate-400">Water Intake Logged</div>
+                  <div class="text-lg font-extrabold text-sky-400 mono-num mt-0.5"><span id="intakeWaterText">1750</span> mL</div>
+                  <div class="flex gap-1.5 mt-2">
+                    <button type="button" onclick="adjustWaterIntake(250)" class="flex-1 py-1 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-[11px] font-bold transition">+250 mL</button>
+                    <button type="button" onclick="adjustWaterIntake(-250)" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold transition">−</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Smart Exercise & Rest Prescription Cards (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+
+          <!-- 2 Main Prescription Cards: Kitna Exercise vs Kitna Rest -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            <!-- Card 1: Kitna Exercise Karna Hai -->
+            <div class="glass-card rounded-2xl p-5 border-t-4 border-t-emerald-500 flex flex-col justify-between space-y-4">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">🏃 Kitna Exercise Karna Hai</span>
+                  <span id="recIntensityBadge" class="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Zone 2-3</span>
+                </div>
+                <h3 id="recWorkoutTitle" class="text-xl font-extrabold text-white">30 Min Steady Aerobic Run</h3>
+                <p id="recWorkoutReason" class="text-xs text-slate-300 leading-relaxed">
+                  With an 82% Energy Bank and low muscle soreness (3/10), your body is primed for an aerobic endurance run without risking overtraining.
+                </p>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-center">
+                <div>
+                  <div class="text-[10px] uppercase text-slate-400">Target Time</div>
+                  <div id="recDurationVal" class="text-base font-extrabold text-emerald-400 mono-num mt-0.5">30 min</div>
+                </div>
+                <div class="border-x border-slate-800">
+                  <div class="text-[10px] uppercase text-slate-400">Target Dist</div>
+                  <div id="recDistanceVal" class="text-base font-extrabold text-white mono-num mt-0.5">5.4 km</div>
+                </div>
+                <div>
+                  <div class="text-[10px] uppercase text-slate-400">Est. Burn</div>
+                  <div id="recCaloriesVal" class="text-base font-extrabold text-amber-400 mono-num mt-0.5">343 kcal</div>
+                </div>
+              </div>
+
+              <button type="button" onclick="applyRecommendedTimer()" class="w-full py-2.5 rounded-xl text-xs font-extrabold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow">
+                ⏱️ Load Recommended Time into Run Tracker
+              </button>
+            </div>
+
+            <!-- Card 2: Kitna Rest Karna Hai -->
+            <div class="glass-card rounded-2xl p-5 border-t-4 border-t-purple-500 flex flex-col justify-between space-y-4">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-extrabold uppercase tracking-wider text-purple-400">🛌 Kitna Rest &amp; Recovery Karna Hai</span>
+                  <span id="recStrainLevelBadge" class="text-[11px] font-bold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">Moderate Strain</span>
+                </div>
+                <h3 id="recRestTitle" class="text-xl font-extrabold text-white">14 Hours Recovery Window</h3>
+                <p id="recRestReason" class="text-xs text-slate-300 leading-relaxed">
+                  Based on today's calorie burn and glycogen depletion, allow 14 hours before your next high-intensity session and prioritize 7.5–8.0 hours of sleep tonight.
+                </p>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-center">
+                <div>
+                  <div class="text-[10px] uppercase text-slate-400">Rest Window</div>
+                  <div id="recRestHoursVal" class="text-base font-extrabold text-purple-400 mono-num mt-0.5">14 hrs</div>
+                </div>
+                <div class="border-x border-slate-800">
+                  <div class="text-[10px] uppercase text-slate-400">Sleep Target</div>
+                  <div id="recSleepHoursVal" class="text-base font-extrabold text-white mono-num mt-0.5">8.0 hrs</div>
+                </div>
+                <div>
+                  <div class="text-[10px] uppercase text-slate-400">Refuel Carbs</div>
+                  <div id="recRefuelCarbsVal" class="text-base font-extrabold text-sky-400 mono-num mt-0.5">65 g</div>
+                </div>
+              </div>
+
+              <div id="recMobilityTip" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
+                💡 <strong>Recovery Protocol:</strong> 10 min calf &amp; hip flexor foam rolling + 500 mL electrolyte water within 30 mins post-run.
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Detailed Energy Ledger Card -->
+          <div class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-sm font-bold text-white">Complete Energy Record Breakdown (Calories, Substrate &amp; Balance)</h3>
+                <p class="text-xs text-slate-400">Scientific MET energy expenditure + glycogen/lipid oxidation tracking</p>
+              </div>
+              <span id="netCalorieBalanceBadge" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-amber-300 mono-num">Net Balance: -140 kcal</span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                <div class="text-[11px] text-slate-400">Active Run Burn Today</div>
+                <div id="ledgerActiveCal" class="text-xl font-extrabold text-amber-400 mono-num mt-0.5">310 kcal</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">From tracked runs</div>
+              </div>
+              <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                <div class="text-[11px] text-slate-400">Total Daily Expenditure</div>
+                <div id="ledgerTotalTdee" class="text-xl font-extrabold text-white mono-num mt-0.5">1,990 kcal</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">BMR + Active Burn</div>
+              </div>
+              <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                <div class="text-[11px] text-slate-400">Glycogen / Carbs Used</div>
+                <div id="ledgerCarbsUsed" class="text-xl font-extrabold text-emerald-400 mono-num mt-0.5">54 g</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">~70% of run fuel</div>
+              </div>
+              <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                <div class="text-[11px] text-slate-400">Lipid / Fat Oxidized</div>
+                <div id="ledgerFatUsed" class="text-xl font-extrabold text-teal-400 mono-num mt-0.5">10 g</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">~30% of run fuel</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- TAB 3: RUN HISTORY, CHARTS & OPEN-SOURCE EXPORT       -->
+    <!-- ===================================================== -->
+    <div id="tabPanelHistory" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Chart Card (6 cols) -->
+        <div class="lg:col-span-6 glass-card rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-bold text-white">Distance &amp; Calorie Burn Trend</h2>
+              <p class="text-xs text-slate-400">Visualizes every saved run across your training log</p>
+            </div>
+            <span id="totalLifetimeKmBadge" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 mono-num">Total: 14.4 km</span>
+          </div>
+          <div class="relative h-72 w-full">
+            <canvas id="runHistoryChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Saved Run Log Table (6 cols) -->
+        <div class="lg:col-span-6 glass-card rounded-2xl p-5 flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-sm font-bold text-white">Saved Run &amp; Energy Sessions</h2>
+                <p class="text-xs text-slate-400">Add a manual run or export open-source JSON/GPX logs</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="exportRunsJson()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 transition">
+                  ⬇ Export JSON
+                </button>
+                <button type="button" onclick="exportLatestGpx()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition">
+                  🗺️ Export GPX
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto max-h-72">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-slate-800 text-slate-400 uppercase text-[11px]">
+                    <th class="py-2 px-2">Date / Mode</th>
+                    <th class="py-2 px-2 text-right">Distance</th>
+                    <th class="py-2 px-2 text-right">Duration</th>
+                    <th class="py-2 px-2 text-right">Pace</th>
+                    <th class="py-2 px-2 text-right">Energy</th>
+                    <th class="py-2 px-2 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="historyTableBody" class="divide-y divide-slate-800/60 text-slate-200 mono-num"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Quick Manual Log Entry Form -->
+          <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+            <div class="text-xs font-bold text-slate-300">Quick Log Past Run (Manual Entry)</div>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <input id="manualDistKm" type="number" step="0.1" min="0.5" placeholder="Dist (km)" value="4.0" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white mono-num" />
+              <input id="manualDurMin" type="number" step="1" min="2" placeholder="Time (min)" value="22" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white mono-num" />
+              <select id="manualIntensity" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+                <option value="easy">Easy Jog</option>
+                <option value="moderate" selected>Moderate Run</option>
+                <option value="tempo">Tempo Run</option>
+              </select>
+              <button type="button" onclick="addManualRunEntry()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-lg px-3 py-1.5 transition">
+                + Log Run
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Open-Source Specs & Data Export Modal -->
+  <div id="specModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-2xl w-full p-6 space-y-4 border border-slate-700 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-base font-extrabold text-white">OpenStride — Open-Source Architecture &amp; Data Export</h3>
+          <p class="text-xs text-slate-400">MIT Licensed • Self-Contained Browser &amp; PWA Ready</p>
+        </div>
+        <button type="button" onclick="toggleModal('specModal', false)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
+          <div class="font-bold text-emerald-400">1. Real-Time Geolocation &amp; Haversine Distance Formula</div>
+          <p>Uses <code class="text-amber-300">navigator.geolocation.watchPosition</code> with high-accuracy GPS locking and a seamless Live Route Simulator fallback. Distance between coordinate pairs $(\phi_1, \lambda_1)$ and $(\phi_2, \lambda_2)$ is computed via the spherical Haversine formula with Earth radius $R = 6371\text{ km}$.</p>
+        </div>
+
+        <div class="bg-slate-900 border border-emerald-500/40 rounded-xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-emerald-400">📲 GitHub se Android par Install Kaise Karein (2 Easy Methods)</div>
+            <span id="wakeLockStatusBadge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Wake Lock Ready</span>
+          </div>
+          <p><strong>Method 1 — GitHub Pages (Direct PWA App Install, 1 Minute):</strong> Upload this repository to GitHub → Go to <em>Settings → Pages</em> → Enable from <code class="text-emerald-300">main</code> branch. Open your <code class="text-emerald-300">https://&lt;username&gt;.github.io/&lt;repo&gt;/</code> link in Android Chrome and tap <strong>"Add to Home Screen / Install App"</strong>. It runs full-screen with real Android GPS &amp; Screen Wake Lock.</p>
+          <p><strong>Method 2 — GitHub Actions Auto-APK Build (Native Android .apk):</strong> Push the included <code class="text-amber-300">.github/workflows/build-android-apk.yml</code> &amp; <code class="text-amber-300">capacitor.config.json</code> to GitHub. GitHub Actions automatically builds an installable <strong>OpenStride-debug.apk</strong> in the <em>Actions → Artifacts</em> tab without needing Android Studio on your phone or PC!</p>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
+          <div class="font-bold text-amber-400">2. MET Energy Expenditure &amp; Recovery Algorithm</div>
+          <p>Active calories are computed dynamically via <code class="text-emerald-300">kcal = MET × Weight(kg) × Duration(hr)</code>, where MET dynamically scales with live speed (7.0 to 14.0 METs). The Recovery Coach synthesizes daily active burn, sleep duration, and RPE soreness (1–10) into an <strong>Energy Bank (0–100%)</strong> to prescribe exact exercise minutes/distance and recovery hours.</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-white">Exportable Open-Source Data Payload (JSON / GPX)</span>
+            <button type="button" onclick="copyExportPayload()" class="px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-bold">📋 Copy Data</button>
+          </div>
+          <textarea id="exportDataTextarea" readonly rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-slate-300 focus:outline-none"></textarea>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="toggleModal('specModal', false)" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // STATE & CONFIGURATION
+    // =========================================================
+    const INTENSITY_PRESETS = {
+      easy:     { label: 'Easy Jog',     paceSecPerKm: 420, met: 7.0,  hr: 128, zone: 'Zone 2 Recovery' },
+      moderate: { label: 'Moderate Run', paceSecPerKm: 330, met: 9.8,  hr: 148, zone: 'Zone 3 Aerobic' },
+      tempo:    { label: 'Tempo Run',    paceSecPerKm: 275, met: 11.5, hr: 166, zone: 'Zone 4 Threshold' },
+      sprint:   { label: 'HIIT / Sprint',paceSecPerKm: 230, met: 14.0, hr: 182, zone: 'Zone 5 VO2 Max' }
+    };
+
+    const appState = {
+      activeTab: 'tracker',
+      unit: 'km', // 'km' or 'mi'
+      audioEnabled: true,
+      runMode: 'stopwatch', // 'stopwatch' or 'countdown'
+      intensityKey: 'moderate',
+      isRunning: false,
+      isPaused: false,
+      elapsedMs: 0,
+      targetDurationMs: 30 * 60 * 1000, // default 30 mins
+      targetDistanceKm: 5.0,
+      lastTickTimestamp: null,
+      timerIntervalId: null,
+      distanceKm: 0,
+      currentSpeedKmh: 0,
+      elevationGainM: 0,
+      activeCalories: 0,
+      sweatLossMl: 0,
+      nextAutoSplitKm: 1,
+      splits: [],
+
+      // GPS Tracking state
+      useRealGps: false,
+      gpsWatchId: null,
+      mapZoom: 1.0,
+      mapOffsetX: 0,
+      mapOffsetY: 0,
+      simAngleRad: 0,
+      baseLat: 23.34410,
+      baseLng: 85.30956,
+      currentLat: 23.34410,
+      currentLng: 85.30956,
+      currentAccuracy: 3.8,
+      routePoints: [
+        { lat: 23.34410, lng: 85.30956, x: 0, y: 0, isSplit: false }
+      ],
+
+      // Energy & Biometrics state
+      weightKg: 70,
+      ageYears: 26,
+      sleepHrs: 7.5,
+      fitnessLevel: 'intermediate',
+      rpeSoreness: 3,
+      intakeCalories: 1850,
+      intakeWaterMl: 1750,
+      energyBankPct: 82,
+
+      // Computed Coach Recommendations
+      recommendedMin: 30,
+      recommendedKm: 5.4,
+      recommendedIntensity: 'moderate',
+      recommendedRestHrs: 14,
+
+      // Saved Run History
+      history: [
+        { id: 'run-1', date: '12 Oct • Morning', mode: 'Stopwatch', distanceKm: 5.2, durationSec: 1716, calories: 356, intensity: 'moderate' },
+        { id: 'run-2', date: '13 Oct • Evening', mode: 'Timer (20m)', distanceKm: 3.4, durationSec: 1200, calories: 230, intensity: 'easy' },
+        { id: 'run-3', date: '15 Oct • Morning', mode: 'Timer (30m)', distanceKm: 4.6, durationSec: 1520, calories: 310, intensity: 'moderate' }
+      ]
+    };
+
+    let historyChartInstance = null;
+    let audioCtx = null;
+    let deferredInstallPrompt = null;
+    let wakeLockSentinel = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+    });
+
+    async function requestScreenWakeLock() {
+      try {
+        if ('wakeLock' in navigator && appState.isRunning && !appState.isPaused) {
+          wakeLockSentinel = await navigator.wakeLock.request('screen');
+        }
+      } catch (err) {
+        // Ignore wakeLock errors in sandboxed iframes
+      }
+    }
+
+    async function releaseScreenWakeLock() {
+      try {
+        if (wakeLockSentinel) {
+          await wakeLockSentinel.release();
+          wakeLockSentinel = null;
+        }
+      } catch (err) {}
+    }
+
+    async function triggerAndroidInstallOrGuide() {
+      if (deferredInstallPrompt) {
+        try {
+          deferredInstallPrompt.prompt();
+          await deferredInstallPrompt.userChoice;
+          deferredInstallPrompt = null;
+          return;
+        } catch (err) {}
+      }
+      toggleModal('specModal', true);
+      showToast('Opened Android + GitHub installation guide!', 'emerald');
+    }
+
+    // =========================================================
+    // SAFE STORAGE & TOAST NOTIFICATIONS
+    // =========================================================
+    function saveStateToStorage() {
+      try {
+        const payload = {
+          unit: appState.unit,
+          weightKg: appState.weightKg,
+          ageYears: appState.ageYears,
+          sleepHrs: appState.sleepHrs,
+          fitnessLevel: appState.fitnessLevel,
+          rpeSoreness: appState.rpeSoreness,
+          intakeCalories: appState.intakeCalories,
+          intakeWaterMl: appState.intakeWaterMl,
+          history: appState.history
+        };
+        localStorage.setItem('openstride_state_v1', JSON.stringify(payload));
+      } catch (err) {
+        // Ignore storage errors in sandboxed iframes
+      }
+    }
+
+    function loadStateFromStorage() {
+      try {
+        const raw = localStorage.getItem('openstride_state_v1');
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed.weightKg) appState.weightKg = parsed.weightKg;
+        if (parsed.ageYears) appState.ageYears = parsed.ageYears;
+        if (parsed.sleepHrs) appState.sleepHrs = parsed.sleepHrs;
+        if (parsed.fitnessLevel) appState.fitnessLevel = parsed.fitnessLevel;
+        if (parsed.rpeSoreness) appState.rpeSoreness = parsed.rpeSoreness;
+        if (parsed.intakeCalories) appState.intakeCalories = parsed.intakeCalories;
+        if (parsed.intakeWaterMl) appState.intakeWaterMl = parsed.intakeWaterMl;
+        if (Array.isArray(parsed.history) && parsed.history.length > 0) {
+          appState.history = parsed.history;
+        }
+      } catch (err) {
+        // Ignore storage errors
+      }
+    }
+
+    function showToast(message, type = 'emerald') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const colorMap = {
+        emerald: 'border-emerald-500/60 bg-slate-900/95 text-emerald-300',
+        amber: 'border-amber-500/60 bg-slate-900/95 text-amber-300',
+        sky: 'border-sky-500/60 bg-slate-900/95 text-sky-300',
+        rose: 'border-rose-500/60 bg-slate-900/95 text-rose-300'
+      };
+      const el = document.createElement('div');
+      el.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold flex items-center justify-between gap-3 transition-all ${colorMap[type] || colorMap.emerald}`;
+      el.innerHTML = `<span>${message}</span>`;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 250);
+      }, 3400);
+    }
+
+    // =========================================================
+    // WEB AUDIO SYNTHESIZER (FOR TIMER & SPLIT ALERTS)
+    // =========================================================
+    function playBeep(freq = 880, durationMs = 160, count = 1) {
+      if (!appState.audioEnabled) return;
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        for (let i = 0; i < count; i++) {
+          const startOffset = i * (durationMs + 90) / 1000;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startOffset);
+          gain.gain.setValueAtTime(0.12, audioCtx.currentTime + startOffset);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + startOffset + durationMs / 1000);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + startOffset);
+          osc.stop(audioCtx.currentTime + startOffset + durationMs / 1000);
+        }
+      } catch (e) {
+        // Ignore audio restrictions
+      }
+    }
+
+    function toggleAudioAlerts() {
+      appState.audioEnabled = !appState.audioEnabled;
+      document.getElementById('soundIcon').textContent = appState.audioEnabled ? '🔔' : '🔕';
+      document.getElementById('soundLabel').textContent = appState.audioEnabled ? 'Audio On' : 'Muted';
+      if (appState.audioEnabled) playBeep(740, 120, 1);
+      showToast(appState.audioEnabled ? 'Timer & split audio alerts enabled' : 'Audio alerts muted', 'sky');
+    }
+
+    // =========================================================
+    // NAVIGATION & MODALS
+    // =========================================================
+    function switchTab(tabName) {
+      appState.activeTab = tabName;
+      const tabs = ['tracker', 'energy', 'history'];
+      tabs.forEach(t => {
+        const panel = document.getElementById('tabPanel' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (panel) panel.classList.toggle('hidden', t !== tabName);
+        if (btn) {
+          if (t === tabName) {
+            btn.className = 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-emerald-500 text-slate-950 shadow';
+          } else {
+            btn.className = 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white';
+          }
+        }
+      });
+      if (tabName === 'tracker') {
+        setTimeout(() => drawRouteMap(), 50);
+      } else if (tabName === 'history') {
+        renderHistoryTableAndChart();
+      }
+    }
+
+    function toggleModal(modalId, show) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+      modal.classList.toggle('hidden', !show);
+      if (show && modalId === 'specModal') {
+        updateExportTextarea();
+      }
+    }
+
+    function toggleDistanceUnit() {
+      appState.unit = appState.unit === 'km' ? 'mi' : 'km';
+      document.getElementById('unitLabel').textContent = appState.unit.toUpperCase();
+      updateTelemetryUI();
+      renderSplitsTable();
+      recalculateEnergyAndCoach();
+      renderHistoryTableAndChart();
+      saveStateToStorage();
+      showToast(`Distance unit switched to ${appState.unit.toUpperCase()}`, 'emerald');
+    }
+
+    // =========================================================
+    // RUN MODE & CUSTOM COUNTDOWN TIMER SETUP
+    // =========================================================
+    function setRunMode(mode) {
+      if (appState.isRunning) {
+        showToast('Pause or reset the active run before switching timer modes.', 'amber');
+        return;
+      }
+      appState.runMode = mode;
+      const swBtn = document.getElementById('modeStopwatchBtn');
+      const cdBtn = document.getElementById('modeCountdownBtn');
+      const setupBox = document.getElementById('countdownSetupBox');
+
+      if (mode === 'stopwatch') {
+        swBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition';
+        cdBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition';
+        setupBox.classList.add('hidden');
+      } else {
+        cdBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition';
+        swBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition';
+        setupBox.classList.remove('hidden');
+        syncCustomTimerInput();
+      }
+      updateTelemetryUI();
+    }
+
+    function setTimerPreset(minutes, seconds) {
+      document.getElementById('inputTimerMin').value = minutes;
+      document.getElementById('inputTimerSec').value = seconds;
+      syncCustomTimerInput();
+      showToast(`Countdown timer set to ${minutes}m ${seconds}s`, 'amber');
+    }
+
+    function syncCustomTimerInput() {
+      const mins = Math.max(0, parseInt(document.getElementById('inputTimerMin').value, 10) || 0);
+      const secs = Math.max(0, Math.min(59, parseInt(document.getElementById('inputTimerSec').value, 10) || 0));
+      const targetKm = Math.max(0.5, parseFloat(document.getElementById('inputTargetDistKm').value) || 5.0);
+
+      const totalMs = Math.max(10000, (mins * 60 + secs) * 1000);
+      appState.targetDurationMs = totalMs;
+      appState.targetDistanceKm = targetKm;
+
+      const preset = INTENSITY_PRESETS[appState.intensityKey];
+      const estKcal = Math.round(preset.met * appState.weightKg * (totalMs / 3600000));
+      document.getElementById('timerTargetCalEstimate').innerHTML = `Est. Burn: <strong class="text-amber-300 mono-num">~${estKcal} kcal</strong>`;
+      updateTelemetryUI();
+    }
+
+    function updateIntensityPreset(key) {
+      if (!INTENSITY_PRESETS[key]) return;
+      appState.intensityKey = key;
+      syncCustomTimerInput();
+      updateTelemetryUI();
+    }
+
+    // =========================================================
+    // HAVERSINE DISTANCE & REAL-TIME GPS TRACKER
+    // =========================================================
+    function haversineKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function toggleGpsSource() {
+      const btn = document.getElementById('btnToggleGpsSource');
+      const pill = document.getElementById('gpsModePill');
+
+      if (!appState.useRealGps) {
+        if (!navigator.geolocation) {
+          showToast('Browser Geolocation API is unavailable here; continuing with Simulated GPS.', 'amber');
+          return;
+        }
+        appState.useRealGps = true;
+        btn.textContent = '🧪 Switch to Simulated GPS';
+        pill.textContent = 'Real Browser GPS Active';
+        pill.className = 'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30';
+        startBrowserGeolocation();
+        showToast('Switched to Real Device GPS tracking', 'sky');
+      } else {
+        stopBrowserGeolocation();
+        appState.useRealGps = false;
+        btn.textContent = '📡 Use Real Browser GPS';
+        pill.textContent = 'Simulated GPS Active';
+        pill.className = 'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        showToast('Switched to Simulated Live GPS loop', 'emerald');
+      }
+    }
+
+    function startBrowserGeolocation() {
+      if (!navigator.geolocation) return;
+      stopBrowserGeolocation();
+      try {
+        appState.gpsWatchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            const { latitude, longitude, accuracy, speed } = pos.coords;
+            appState.currentAccuracy = accuracy ? Math.round(accuracy * 10) / 10 : 4.0;
+            if (appState.isRunning && !appState.isPaused) {
+              const stepKm = haversineKm(appState.currentLat, appState.currentLng, latitude, longitude);
+              if (stepKm > 0.001 && stepKm < 0.5) {
+                appState.distanceKm += stepKm;
+                appState.currentSpeedKmh = speed ? speed * 3.6 : (stepKm * 3600);
+                const dx = (longitude - appState.baseLng) * 95000;
+                const dy = -(latitude - appState.baseLat) * 95000;
+                appState.routePoints.push({ lat: latitude, lng: longitude, x: dx, y: dy, isSplit: false });
+              }
+            }
+            appState.currentLat = latitude;
+            appState.currentLng = longitude;
+            drawRouteMap();
+          },
+          () => {
+            showToast('Browser GPS permission blocked in sandbox; auto-falling back to Simulated GPS.', 'amber');
+            appState.useRealGps = false;
+            document.getElementById('btnToggleGpsSource').textContent = '📡 Use Real Browser GPS';
+            document.getElementById('gpsModePill').textContent = 'Simulated GPS Active';
+          },
+          { enableHighAccuracy: true, maximumAge: 1000, timeout: 6000 }
+        );
+      } catch (e) {
+        appState.useRealGps = false;
+      }
+    }
+
+    function stopBrowserGeolocation() {
+      if (appState.gpsWatchId !== null && navigator.geolocation) {
+        try {
+          navigator.geolocation.clearWatch(appState.gpsWatchId);
+        } catch (e) {}
+        appState.gpsWatchId = null;
+      }
+    }
+
+    // =========================================================
+    // START / PAUSE / FINISH / RESET RUN ENGINE
+    // =========================================================
+    function toggleStartPauseRun() {
+      if (!appState.isRunning) {
+        // Start Run
+        appState.isRunning = true;
+        appState.isPaused = false;
+        appState.lastTickTimestamp = performance.now();
+        if (appState.timerIntervalId) clearInterval(appState.timerIntervalId);
+        appState.timerIntervalId = setInterval(onRunTick, 100);
+        requestScreenWakeLock();
+        playBeep(880, 140, 1);
+        updateRunControlButtons();
+        showToast(appState.runMode === 'countdown' ? 'Countdown Timer & GPS tracking started!' : 'Real-time GPS Run started!', 'emerald');
+      } else if (!appState.isPaused) {
+        // Pause Run
+        appState.isPaused = true;
+        if (appState.timerIntervalId) {
+          clearInterval(appState.timerIntervalId);
+          appState.timerIntervalId = null;
+        }
+        playBeep(520, 150, 1);
+        updateRunControlButtons();
+        showToast('Run paused — recovery heart rate stabilizing.', 'amber');
+      } else {
+        // Resume Run
+        appState.isPaused = false;
+        appState.lastTickTimestamp = performance.now();
+        if (appState.timerIntervalId) clearInterval(appState.timerIntervalId);
+        appState.timerIntervalId = setInterval(onRunTick, 100);
+        playBeep(880, 140, 1);
+        updateRunControlButtons();
+        showToast('Run resumed!', 'emerald');
+      }
+    }
+
+    function updateRunControlButtons() {
+      const btnStartPause = document.getElementById('btnStartPause');
+      const icon = document.getElementById('btnStartPauseIcon');
+      const text = document.getElementById('btnStartPauseText');
+      const statusDot = document.getElementById('liveStatusDot');
+      const statusLabel = document.getElementById('liveStatusLabel');
+      const btnLap = document.getElementById('btnLapSplit');
+      const btnFinish = document.getElementById('btnFinishRun');
+
+      if (!appState.isRunning) {
+        btnStartPause.className = 'px-7 py-3 rounded-xl font-extrabold text-sm sm:text-base bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 transition flex items-center gap-2';
+        icon.textContent = '▶';
+        text.textContent = 'Start Run';
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
+        statusLabel.textContent = 'Ready to Start';
+        btnLap.disabled = true;
+        btnFinish.disabled = true;
+      } else if (appState.isPaused) {
+        btnStartPause.className = 'px-7 py-3 rounded-xl font-extrabold text-sm sm:text-base bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 transition flex items-center gap-2';
+        icon.textContent = '▶';
+        text.textContent = 'Resume Run';
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
+        statusLabel.textContent = 'Paused';
+        btnLap.disabled = false;
+        btnFinish.disabled = false;
+      } else {
+        btnStartPause.className = 'px-7 py-3 rounded-xl font-extrabold text-sm sm:text-base bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/25 transition flex items-center gap-2';
+        icon.textContent = '⏸';
+        text.textContent = 'Pause';
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping';
+        statusLabel.textContent = appState.runMode === 'countdown' ? 'Countdown Running • GPS Lock' : 'Live GPS Tracking';
+        btnLap.disabled = false;
+        btnFinish.disabled = false;
+      }
+    }
+
+    function onRunTick() {
+      if (!appState.isRunning || appState.isPaused) return;
+      const now = performance.now();
+      const dtMs = Math.min(500, Math.max(10, now - (appState.lastTickTimestamp || now)));
+      appState.lastTickTimestamp = now;
+      appState.elapsedMs += dtMs;
+
+      const preset = INTENSITY_PRESETS[appState.intensityKey];
+      const baseSpeedKmh = 3600 / preset.paceSecPerKm;
+      // Add subtle realistic cadence variation
+      const wave = Math.sin(appState.elapsedMs / 4000) * 0.35;
+      appState.currentSpeedKmh = Math.max(3.5, baseSpeedKmh + wave);
+
+      if (!appState.useRealGps) {
+        // Advance simulated GPS position along a scenic stadium/park curve
+        const dtHours = dtMs / 3600000;
+        const deltaKm = appState.currentSpeedKmh * dtHours;
+        appState.distanceKm += deltaKm;
+        appState.elevationGainM += deltaKm * 11.5;
+
+        appState.simAngleRad += deltaKm * 1.65;
+        const radiusMeters = 115 + 28 * Math.sin(appState.simAngleRad * 2);
+        const xMeters = Math.cos(appState.simAngleRad) * radiusMeters;
+        const yMeters = Math.sin(appState.simAngleRad) * (radiusMeters * 0.72);
+
+        appState.currentLat = appState.baseLat + (yMeters / 111111);
+        appState.currentLng = appState.baseLng + (xMeters / 102000);
+
+        // Append waypoint roughly every 0.8 seconds
+        if (Math.floor(appState.elapsedMs / 800) > appState.routePoints.length - 1) {
+          appState.routePoints.push({
+            lat: appState.currentLat,
+            lng: appState.currentLng,
+            x: xMeters,
+            y: yMeters,
+            isSplit: false
+          });
+        }
+      }
+
+      // Compute Active Calories & Sweat Loss
+      const elapsedHours = appState.elapsedMs / 3600000;
+      appState.activeCalories = preset.met * appState.weightKg * elapsedHours;
+      appState.sweatLossMl = elapsedHours * (520 + (preset.met - 7) * 55);
+
+      // Check Automatic 1 KM Split
+      if (appState.distanceKm >= appState.nextAutoSplitKm) {
+        recordSplitEntry(`KM ${appState.nextAutoSplitKm}`, 'Auto 1 km');
+        appState.nextAutoSplitKm += 1;
+        if (appState.routePoints.length > 0) {
+          appState.routePoints[appState.routePoints.length - 1].isSplit = true;
+        }
+        playBeep(1046, 130, 2);
+        showToast(`KM ${appState.nextAutoSplitKm - 1} split completed!`, 'emerald');
+      }
+
+      // Check Countdown Timer Completion
+      if (appState.runMode === 'countdown' && appState.elapsedMs >= appState.targetDurationMs) {
+        appState.elapsedMs = appState.targetDurationMs;
+        playBeep(1174, 220, 3);
+        showToast('🎉 Countdown Timer Complete! Saving your run & updating recovery plan.', 'amber');
+        finishAndSaveRun();
+        return;
+      }
+
+      updateTelemetryUI();
+      drawRouteMap();
+    }
+
+    function recordManualLap() {
+      if (!appState.isRunning && appState.elapsedMs === 0) return;
+      const lapNum = appState.splits.length + 1;
+      recordSplitEntry(`Lap ${lapNum}`, 'Manual Lap');
+      if (appState.routePoints.length > 0) {
+        appState.routePoints[appState.routePoints.length - 1].isSplit = true;
+      }
+      playBeep(987, 110, 1);
+      showToast(`Lap ${lapNum} marked at ${formatDistance(appState.distanceKm)}`, 'sky');
+      drawRouteMap();
+    }
+
+    function recordSplitEntry(label, type) {
+      const totalSec = Math.max(1, Math.round(appState.elapsedMs / 1000));
+      const paceSecPerKm = appState.distanceKm > 0.01 ? Math.round(totalSec / appState.distanceKm) : INTENSITY_PRESETS[appState.intensityKey].paceSecPerKm;
+      appState.splits.unshift({
+        label,
+        type,
+        distanceKm: appState.distanceKm,
+        elapsedMs: appState.elapsedMs,
+        paceSecPerKm,
+        calories: Math.round(appState.activeCalories)
+      });
+      renderSplitsTable();
+    }
+
+    function renderSplitsTable() {
+      const tbody = document.getElementById('splitsTableBody');
+      const badge = document.getElementById('splitCountBadge');
+      badge.textContent = `${appState.splits.length} Splits`;
+
+      if (appState.splits.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500 font-sans">Start running or click "Mark Lap" to record live GPS splits.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = appState.splits.map(sp => `
+        <tr class="hover:bg-slate-900/60">
+          <td class="py-2 px-3 font-bold text-emerald-400">${sp.label}</td>
+          <td class="py-2 px-3 text-slate-400 font-sans">${sp.type}</td>
+          <td class="py-2 px-3 text-right">${formatDistance(sp.distanceKm)}</td>
+          <td class="py-2 px-3 text-right">${formatClockShort(sp.elapsedMs)}</td>
+          <td class="py-2 px-3 text-right text-slate-300">${formatPace(sp.paceSecPerKm)}</td>
+          <td class="py-2 px-3 text-right text-amber-400">${sp.calories} kcal</td>
+        </tr>
+      `).join('');
+    }
+
+    function finishAndSaveRun() {
+      if (appState.timerIntervalId) {
+        clearInterval(appState.timerIntervalId);
+        appState.timerIntervalId = null;
+      }
+      appState.isRunning = false;
+      appState.isPaused = false;
+
+      const durationSec = Math.max(1, Math.round(appState.elapsedMs / 1000));
+      const savedDistKm = Math.max(0.05, Math.round(appState.distanceKm * 100) / 100);
+      const savedCal = Math.max(5, Math.round(appState.activeCalories));
+
+      const modeLabel = appState.runMode === 'countdown'
+        ? `Timer (${Math.round(appState.targetDurationMs / 60000)}m)`
+        : 'Stopwatch';
+
+      appState.history.unshift({
+        id: 'run-' + Date.now(),
+        date: 'Today • Live GPS',
+        mode: modeLabel,
+        distanceKm: savedDistKm,
+        durationSec,
+        calories: savedCal,
+        intensity: appState.intensityKey
+      });
+
+      updateRunControlButtons();
+      recalculateEnergyAndCoach();
+      renderHistoryTableAndChart();
+      saveStateToStorage();
+      showToast(`Saved ${formatDistance(savedDistKm)} run (${savedCal} kcal)! Energy & Rest plan updated.`, 'emerald');
+    }
+
+    function resetCurrentRun() {
+      if (appState.timerIntervalId) {
+        clearInterval(appState.timerIntervalId);
+        appState.timerIntervalId = null;
+      }
+      appState.isRunning = false;
+      appState.isPaused = false;
+      appState.elapsedMs = 0;
+      appState.distanceKm = 0;
+      appState.currentSpeedKmh = 0;
+      appState.elevationGainM = 0;
+      appState.activeCalories = 0;
+      appState.sweatLossMl = 0;
+      appState.nextAutoSplitKm = 1;
+      appState.splits = [];
+      appState.simAngleRad = 0;
+      appState.currentLat = appState.baseLat;
+      appState.currentLng = appState.baseLng;
+      appState.routePoints = [
+        { lat: appState.baseLat, lng: appState.baseLng, x: 0, y: 0, isSplit: false }
+      ];
+      updateRunControlButtons();
+      renderSplitsTable();
+      updateTelemetryUI();
+      drawRouteMap();
+      showToast('Tracker reset to 00:00:00.0', 'sky');
+    }
+
+    // =========================================================
+    // FORMATTING & TELEMETRY UI UPDATES
+    // =========================================================
+    function formatClockMain(ms) {
+      const clamped = Math.max(0, Math.floor(ms));
+      const totalSec = Math.floor(clamped / 1000);
+      const hrs = Math.floor(totalSec / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+      const tenths = Math.floor((clamped % 1000) / 100);
+      const pad = n => String(n).padStart(2, '0');
+      return `${pad(hrs)}:${pad(mins)}:${pad(secs)}<span class="text-2xl sm:text-3xl text-emerald-400">.${tenths}</span>`;
+    }
+
+    function formatClockShort(ms) {
+      const totalSec = Math.max(0, Math.floor(ms / 1000));
+      const mins = Math.floor(totalSec / 60);
+      const secs = totalSec % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function formatDistance(km) {
+      const val = appState.unit === 'km' ? km : km * 0.621371;
+      return `${val.toFixed(2)} ${appState.unit}`;
+    }
+
+    function formatPace(secPerKm) {
+      const secPerUnit = appState.unit === 'km' ? secPerKm : Math.round(secPerKm / 0.621371);
+      const m = Math.floor(secPerUnit / 60);
+      const s = Math.round(secPerUnit % 60);
+      return `${m}:${String(s).padStart(2, '0')} /${appState.unit}`;
+    }
+
+    function updateTelemetryUI() {
+      const preset = INTENSITY_PRESETS[appState.intensityKey];
+
+      // Main clock display (Stopwatch shows elapsed; Countdown shows remaining)
+      const displayMs = appState.runMode === 'countdown'
+        ? Math.max(0, appState.targetDurationMs - appState.elapsedMs)
+        : appState.elapsedMs;
+
+      document.getElementById('mainClockDisplay').innerHTML = formatClockMain(displayMs);
+
+      // Progress bar & Secondary clock text
+      let pct = 0;
+      if (appState.runMode === 'countdown') {
+        pct = Math.min(100, Math.round((appState.elapsedMs / Math.max(1000, appState.targetDurationMs)) * 100));
+        document.getElementById('secondaryTimerText').innerHTML = `Elapsed: <strong class="text-slate-200 mono-num">${formatClockShort(appState.elapsedMs)}</strong> / Target: <strong class="text-amber-300 mono-num">${formatClockShort(appState.targetDurationMs)}</strong>`;
+      } else {
+        pct = Math.min(100, Math.round((appState.distanceKm / Math.max(0.5, appState.targetDistanceKm)) * 100));
+        document.getElementById('secondaryTimerText').innerHTML = `Distance Goal (${appState.targetDistanceKm} km): <strong class="text-slate-200 mono-num">${formatDistance(appState.distanceKm)}</strong>`;
+      }
+      document.getElementById('goalProgressPct').textContent = `${pct}%`;
+      document.getElementById('timerProgressBar').style.width = `${pct}%`;
+
+      // Distance & Steps
+      const distVal = appState.unit === 'km' ? appState.distanceKm : appState.distanceKm * 0.621371;
+      document.getElementById('statDistance').textContent = distVal.toFixed(2);
+      document.getElementById('statDistanceUnit').textContent = appState.unit;
+      const estSteps = Math.round(appState.distanceKm * 1310);
+      document.getElementById('statStepsSub').textContent = `${estSteps.toLocaleString()} steps • ${Math.round(appState.elevationGainM)} m elev`;
+
+      // Pace & Speed
+      const activeSpeedKmh = appState.isRunning ? appState.currentSpeedKmh : (3600 / preset.paceSecPerKm);
+      const secPerKm = activeSpeedKmh > 0.5 ? Math.round(3600 / activeSpeedKmh) : preset.paceSecPerKm;
+      const secPerUnit = appState.unit === 'km' ? secPerKm : Math.round(secPerKm / 0.621371);
+      const pMin = Math.floor(secPerUnit / 60);
+      const pSec = Math.round(secPerUnit % 60);
+      document.getElementById('statPace').textContent = `${pMin}:${String(pSec).padStart(2, '0')}`;
+      document.getElementById('statPaceUnit').textContent = `/${appState.unit}`;
+      const speedVal = appState.unit === 'km' ? activeSpeedKmh : activeSpeedKmh * 0.621371;
+      document.getElementById('statSpeedSub').textContent = `${speedVal.toFixed(1)} ${appState.unit}/h (${preset.label})`;
+
+      // Calories & Substrate
+      const cals = Math.round(appState.activeCalories);
+      const carbsG = Math.round((cals * 0.72) / 4);
+      const fatG = Math.round((cals * 0.28) / 9);
+      document.getElementById('statCalories').textContent = cals;
+      document.getElementById('statFuelSub').textContent = `${carbsG}g carbs • ${fatG}g fat`;
+
+      // Live Energy drain during run
+      const liveDrain = Math.min(65, Math.round(cals / 12));
+      const currentEnergy = Math.max(12, appState.energyBankPct - liveDrain);
+      const strainScore = Math.min(100, Math.round((cals / 6) + (preset.met * 1.8)));
+      document.getElementById('statLiveEnergy').textContent = `${currentEnergy}%`;
+      document.getElementById('statStrainBadge').textContent = `Strain: ${appState.isRunning || cals > 0 ? strainScore : 0}`;
+      document.getElementById('statLiveEnergyBar').style.width = `${currentEnergy}%`;
+
+      // Sweat & Recovery
+      document.getElementById('statSweatLoss').textContent = Math.round(appState.sweatLossMl);
+      const liveRecHrs = Math.min(48, Math.max(6, Math.round(6 + (cals / 32) + (preset.met - 7) * 1.4)));
+      document.getElementById('statLiveRecoveryHrs').textContent = liveRecHrs;
+      document.getElementById('statZoneSub').textContent = preset.zone;
+
+      // Heart rate & Live Advice
+      const hr = appState.isRunning ? Math.round(preset.hr + Math.sin(appState.elapsedMs / 2000) * 4) : 68;
+      document.getElementById('liveHeartRateEst').textContent = `♥ ~${hr} bpm`;
+      if (appState.isRunning) {
+        if (currentEnergy < 35) {
+          document.getElementById('liveInRunAdvice').innerHTML = `⚠️ <strong class="text-amber-300">Energy reserves dropping (${currentEnergy}%):</strong> Consider slowing your pace by 20 sec/km and hydrating soon.`;
+        } else {
+          document.getElementById('liveInRunAdvice').innerHTML = `✅ <strong class="text-emerald-400">Optimal pacing (${preset.label}):</strong> Burning ~${Math.round(preset.met * appState.weightKg)} kcal/hr. Next auto split at ${appState.nextAutoSplitKm}.0 km.`;
+        }
+      }
+    }
+
+    // =========================================================
+    // INTERACTIVE HTML5 CANVAS GPS ROUTE MAP
+    // =========================================================
+    function adjustMapZoom(factor) {
+      appState.mapZoom = Math.min(4.0, Math.max(0.4, appState.mapZoom * factor));
+      drawRouteMap();
+    }
+
+    function recenterMap() {
+      appState.mapZoom = 1.0;
+      appState.mapOffsetX = 0;
+      appState.mapOffsetY = 0;
+      drawRouteMap();
+      showToast('GPS Map recentered on active runner coordinates', 'sky');
+    }
+
+    function drawRouteMap() {
+      const canvas = document.getElementById('gpsRouteCanvas');
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+      const cx = w / 2 + appState.mapOffsetX;
+      const cy = h / 2 + appState.mapOffsetY;
+      const scale = 1.15 * appState.mapZoom;
+
+      // Background dark map grid
+      ctx.fillStyle = '#070b14';
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle coordinate grid lines
+      const gridStep = 36 * appState.mapZoom;
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.65)';
+      ctx.lineWidth = 1;
+      for (let x = cx % gridStep; x < w; x += gridStep) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = cy % gridStep; y < h; y += gridStep) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Draw Faint Reference Park Loop Track
+      ctx.save();
+      ctx.strokeStyle = 'rgba(51, 65, 85, 0.38)';
+      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let a = 0; a <= Math.PI * 2.05; a += 0.08) {
+        const r = 115 + 28 * Math.sin(a * 2);
+        const px = cx + Math.cos(a) * r * scale;
+        const py = cy + Math.sin(a) * (r * 0.72) * scale;
+        if (a === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      // Draw Active GPS Route Trail
+      const pts = appState.routePoints;
+      if (pts.length > 1) {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#10b981');
+        grad.addColorStop(0.6, '#38bdf8');
+        grad.addColorStop(1, '#f59e0b');
+
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        pts.forEach((p, idx) => {
+          const px = cx + p.x * scale;
+          const py = cy + p.y * scale;
+          if (idx === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+      }
+
+      // Draw Start Marker
+      const startPt = pts[0];
+      const sx = cx + startPt.x * scale;
+      const sy = cy + startPt.y * scale;
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(sx, sy, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw Split Markers
+      pts.forEach((p) => {
+        if (p.isSplit) {
+          const px = cx + p.x * scale;
+          const py = cy + p.y * scale;
+          ctx.fillStyle = '#f59e0b';
+          ctx.beginPath();
+          ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // Draw Current Live Runner Position Dot
+      const lastPt = pts[pts.length - 1];
+      const rx = cx + lastPt.x * scale;
+      const ry = cy + lastPt.y * scale;
+
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+      ctx.beginPath();
+      ctx.arc(rx, ry, 15, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(rx, ry, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Update Coordinate Overlay Text
+      document.getElementById('gpsLatText').textContent = `${appState.currentLat.toFixed(5)}° N`;
+      document.getElementById('gpsLngText').textContent = `${appState.currentLng.toFixed(5)}° E`;
+      document.getElementById('gpsAccText').textContent = `±${appState.currentAccuracy.toFixed(1)} m`;
+      document.getElementById('gpsPtsText').textContent = pts.length;
+      const deg = Math.round(((appState.simAngleRad * 180 / Math.PI) % 360 + 360) % 360);
+      document.getElementById('gpsRouteHeading').textContent = `Heading: ${deg}°`;
+    }
+
+    // =========================================================
+    // SMART ENERGY & RECOVERY RECOMMENDATION ENGINE
+    // =========================================================
+    function adjustEnergyIntake(deltaKcal) {
+      appState.intakeCalories = Math.max(600, appState.intakeCalories + deltaKcal);
+      recalculateEnergyAndCoach();
+      saveStateToStorage();
+      showToast(`Daily nutrition updated: ${appState.intakeCalories} kcal`, 'amber');
+    }
+
+    function adjustWaterIntake(deltaMl) {
+      appState.intakeWaterMl = Math.max(250, appState.intakeWaterMl + deltaMl);
+      recalculateEnergyAndCoach();
+      saveStateToStorage();
+      showToast(`Water intake logged: ${appState.intakeWaterMl} mL`, 'sky');
+    }
+
+    function recalculateEnergyAndCoach() {
+      const weight = Math.max(30, parseFloat(document.getElementById('profileWeight').value) || 70);
+      const age = Math.max(12, parseInt(document.getElementById('profileAge').value, 10) || 26);
+      const sleep = Math.max(2, parseFloat(document.getElementById('profileSleep').value) || 7.5);
+      const fitness = document.getElementById('profileFitness').value || 'intermediate';
+      const rpe = Math.max(1, parseInt(document.getElementById('profileRpe').value, 10) || 3);
+
+      appState.weightKg = weight;
+      appState.ageYears = age;
+      appState.sleepHrs = sleep;
+      appState.fitnessLevel = fitness;
+      appState.rpeSoreness = rpe;
+
+      const rpeLabels = {
+        1: '1 / 10 (Super Fresh)', 2: '2 / 10 (Fresh)', 3: '3 / 10 (Light)',
+        4: '4 / 10 (Moderate)', 5: '5 / 10 (Noticeable)', 6: '6 / 10 (Tired)',
+        7: '7 / 10 (Heavy Legs)', 8: '8 / 10 (Sore)', 9: '9 / 10 (Very Sore)', 10: '10 / 10 (Exhausted)'
+      };
+      document.getElementById('profileRpeLabel').textContent = rpeLabels[rpe] || `${rpe} / 10`;
+
+      // Calculate BMR (Mifflin-St Jeor approx)
+      const bmr = Math.round(10 * weight + 6.25 * 172 - 5 * age + 5);
+      document.getElementById('bmrValueText').textContent = `${bmr.toLocaleString()} kcal`;
+      document.getElementById('intakeCaloriesText').textContent = appState.intakeCalories;
+      document.getElementById('intakeWaterText').textContent = appState.intakeWaterMl;
+
+      // Active calories burned today (latest history entries + current live session)
+      const todayHistCal = appState.history.slice(0, 1).reduce((acc, r) => acc + (r.calories || 0), 0);
+      const totalActiveCalToday = Math.round(todayHistCal + appState.activeCalories);
+      const tdee = bmr + totalActiveCalToday;
+      const netCal = appState.intakeCalories - tdee;
+
+      // Calculate Body Energy Bank (0 - 100%)
+      const sleepScore = Math.min(45, (sleep / 8.0) * 45);
+      const sorenessPenalty = (rpe - 1) * 4.8;
+      const strainPenalty = Math.min(28, totalActiveCalToday / 28);
+      const fuelBonus = netCal > -350 ? 15 : 6;
+      const energyBank = Math.round(Math.max(15, Math.min(98, 45 + sleepScore + fuelBonus - sorenessPenalty - strainPenalty)));
+      appState.energyBankPct = energyBank;
+
+      // Determine Kitna Exercise Karna Hai & Kitna Rest Karna Hai
+      const fitMult = fitness === 'advanced' ? 1.25 : (fitness === 'beginner' ? 0.75 : 1.0);
+      let recTitle = '';
+      let recReason = '';
+      let recMin = 30;
+      let recIntensity = 'moderate';
+      let recZone = 'Zone 2-3 Aerobic';
+      let restHrs = 14;
+      let sleepTarget = 8.0;
+      let statusLabel = 'High Readiness';
+
+      if (energyBank >= 75 && rpe <= 4) {
+        recMin = Math.round(32 * fitMult);
+        recIntensity = 'moderate';
+        recZone = 'Zone 3 Aerobic / Tempo';
+        recTitle = `${recMin} Min Steady Aerobic Run`;
+        recReason = `With a strong ${energyBank}% Energy Bank and low muscle soreness (${rpe}/10), you have optimal glycogen availability for a productive ${recMin}-minute run.`;
+        restHrs = Math.round(12 + (totalActiveCalToday / 45));
+        sleepTarget = 7.5;
+        statusLabel = 'Optimal Readiness';
+      } else if (energyBank >= 50 && rpe <= 6) {
+        recMin = Math.round(22 * fitMult);
+        recIntensity = 'easy';
+        recZone = 'Zone 2 Easy Jog';
+        recTitle = `${recMin} Min Easy Recovery Jog`;
+        recReason = `Your Energy Bank is moderate (${energyBank}%) with ${rpe}/10 fatigue. Keep today's session to a conversational ${recMin}-minute easy jog to stimulate blood flow without spiking cortisol.`;
+        restHrs = Math.round(18 + (totalActiveCalToday / 35));
+        sleepTarget = 8.0;
+        statusLabel = 'Moderate Readiness';
+      } else {
+        recMin = 15;
+        recIntensity = 'easy';
+        recZone = 'Zone 1 Mobility & Walk';
+        recTitle = `15 Min Active Mobility Walk + Rest Day`;
+        recReason = `Energy reserves are depleted (${energyBank}%) or soreness is elevated (${rpe}/10). Prioritize tissue repair today: skip high-impact running and perform 15 mins of gentle walking/stretching.`;
+        restHrs = Math.round(26 + (rpe * 1.5));
+        sleepTarget = 8.5;
+        statusLabel = 'Recovery Priority';
+      }
+
+      const preset = INTENSITY_PRESETS[recIntensity];
+      const recKm = Math.round(((recMin * 60) / preset.paceSecPerKm) * 10) / 10;
+      const recCal = Math.round(preset.met * weight * (recMin / 60));
+      const refuelCarbsG = Math.round((totalActiveCalToday * 0.7) / 4 + 35);
+      const hydrationNeedMl = Math.max(350, Math.round(totalActiveCalToday * 1.8));
+
+      appState.recommendedMin = recMin;
+      appState.recommendedKm = recKm;
+      appState.recommendedIntensity = recIntensity;
+      appState.recommendedRestHrs = restHrs;
+
+      // Update Top Coach Strip
+      document.getElementById('topEnergyPct').textContent = `${energyBank}%`;
+      document.getElementById('readinessStatusPill').textContent = statusLabel;
+      document.getElementById('topCoachHeadline').textContent =
+        `Suggested Exercise: ${recMin} min ${preset.label} (~${formatDistance(recKm)}) • Suggested Rest: ${restHrs} hrs recovery & ${sleepTarget.toFixed(1)} hrs sleep.`;
+      document.getElementById('topTodayCalories').textContent = `${totalActiveCalToday} kcal`;
+      document.getElementById('topHydrationNeed').textContent = `${hydrationNeedMl} mL`;
+      document.getElementById('topGoalText').textContent = recZone;
+
+      // Update Energy Tab Cards
+      document.getElementById('recIntensityBadge').textContent = recZone;
+      document.getElementById('recWorkoutTitle').textContent = recTitle;
+      document.getElementById('recWorkoutReason').textContent = recReason;
+      document.getElementById('recDurationVal').textContent = `${recMin} min`;
+      document.getElementById('recDistanceVal').textContent = formatDistance(recKm);
+      document.getElementById('recCaloriesVal').textContent = `${recCal} kcal`;
+
+      document.getElementById('recStrainLevelBadge').textContent = totalActiveCalToday > 400 ? 'High Strain' : 'Balanced Strain';
+      document.getElementById('recRestTitle').textContent = `${restHrs} Hours Recovery Window`;
+      document.getElementById('recRestReason').textContent =
+        `After burning ${totalActiveCalToday} active kcal today, give your lower body ${restHrs} hours of rest before your next intense workout and aim for ${sleepTarget.toFixed(1)} hrs of sleep.`;
+      document.getElementById('recRestHoursVal').textContent = `${restHrs} hrs`;
+      document.getElementById('recSleepHoursVal').textContent = `${sleepTarget.toFixed(1)} hrs`;
+      document.getElementById('recRefuelCarbsVal').textContent = `${refuelCarbsG} g`;
+
+      // Update Energy Ledger
+      document.getElementById('netCalorieBalanceBadge').textContent = `Net Balance: ${netCal >= 0 ? '+' : ''}${netCal} kcal`;
+      document.getElementById('ledgerActiveCal').textContent = `${totalActiveCalToday} kcal`;
+      document.getElementById('ledgerTotalTdee').textContent = `${tdee.toLocaleString()} kcal`;
+      document.getElementById('ledgerCarbsUsed').textContent = `${Math.round((totalActiveCalToday * 0.72) / 4)} g`;
+      document.getElementById('ledgerFatUsed').textContent = `${Math.round((totalActiveCalToday * 0.28) / 9)} g`;
+
+      updateTelemetryUI();
+    }
+
+    function applyRecommendedTimer() {
+      switchTab('tracker');
+      setRunMode('countdown');
+      document.getElementById('pacePresetSelect').value = appState.recommendedIntensity;
+      updateIntensityPreset(appState.recommendedIntensity);
+      document.getElementById('inputTimerMin').value = appState.recommendedMin;
+      document.getElementById('inputTimerSec').value = 0;
+      document.getElementById('inputTargetDistKm').value = appState.recommendedKm;
+      syncCustomTimerInput();
+      showToast(`Loaded Coach Recommendation: ${appState.recommendedMin} min (${formatDistance(appState.recommendedKm)}) into Countdown Timer!`, 'emerald');
+    }
+
+    // =========================================================
+    // HISTORY TABLE, CHART.JS & OPEN-SOURCE DATA EXPORT
+    // =========================================================
+    function renderHistoryTableAndChart() {
+      const tbody = document.getElementById('historyTableBody');
+      const totalKm = appState.history.reduce((acc, r) => acc + r.distanceKm, 0);
+      document.getElementById('totalLifetimeKmBadge').textContent = `Total: ${formatDistance(totalKm)}`;
+
+      if (appState.history.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500 font-sans">No runs logged yet.</td></tr>`;
+      } else {
+        tbody.innerHTML = appState.history.map((item) => {
+          const paceSec = Math.round(item.durationSec / Math.max(0.1, item.distanceKm));
+          const mins = Math.floor(item.durationSec / 60);
+          const secs = item.durationSec % 60;
+          return `
+            <tr class="hover:bg-slate-900/60">
+              <td class="py-2.5 px-2 font-sans">
+                <div class="font-semibold text-white">${item.date}</div>
+                <div class="text-[10px] text-slate-400">${item.mode}</div>
+              </td>
+              <td class="py-2.5 px-2 text-right font-bold text-emerald-400">${formatDistance(item.distanceKm)}</td>
+              <td class="py-2.5 px-2 text-right">${mins}m ${String(secs).padStart(2, '0')}s</td>
+              <td class="py-2.5 px-2 text-right text-slate-300">${formatPace(paceSec)}</td>
+              <td class="py-2.5 px-2 text-right text-amber-400 font-bold">${item.calories} kcal</td>
+              <td class="py-2.5 px-2 text-right">
+                <button type="button" onclick="deleteHistoryItem('${item.id}')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 text-[11px]">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // Render Chart.js
+      const canvas = document.getElementById('runHistoryChart');
+      if (!canvas || typeof Chart === 'undefined') return;
+      const ordered = [...appState.history].reverse();
+      const labels = ordered.map(r => r.date.split('•')[0].trim());
+      const distData = ordered.map(r => +(appState.unit === 'km' ? r.distanceKm : r.distanceKm * 0.621371).toFixed(2));
+      const calData = ordered.map(r => r.calories);
+
+      if (historyChartInstance) {
+        historyChartInstance.destroy();
+      }
+      historyChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: `Distance (${appState.unit.toUpperCase()})`,
+              data: distData,
+              backgroundColor: 'rgba(16, 185, 129, 0.75)',
+              borderColor: '#10b981',
+              borderWidth: 1,
+              borderRadius: 6,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Energy Burned (kcal)',
+              data: calData,
+              type: 'line',
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.2)',
+              borderWidth: 2.5,
+              tension: 0.3,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#cbd5e1', font: { size: 11 } }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#94a3b8', font: { size: 11 } },
+              grid: { color: 'rgba(51, 65, 85, 0.3)' }
+            },
+            y: {
+              type: 'linear',
+              position: 'left',
+              ticks: { color: '#10b981', font: { size: 11 } },
+              grid: { color: 'rgba(51, 65, 85, 0.3)' }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              ticks: { color: '#f59e0b', font: { size: 11 } },
+              grid: { drawOnChartArea: false }
+            }
+          }
+        }
+      });
+    }
+
+    function addManualRunEntry() {
+      const distKm = Math.max(0.2, parseFloat(document.getElementById('manualDistKm').value) || 4.0);
+      const durMin = Math.max(1, parseFloat(document.getElementById('manualDurMin').value) || 22);
+      const intensity = document.getElementById('manualIntensity').value || 'moderate';
+      const preset = INTENSITY_PRESETS[intensity];
+      const cals = Math.round(preset.met * appState.weightKg * (durMin / 60));
+
+      appState.history.unshift({
+        id: 'run-' + Date.now(),
+        date: 'Logged • Manual',
+        mode: `${preset.label}`,
+        distanceKm: Math.round(distKm * 100) / 100,
+        durationSec: Math.round(durMin * 60),
+        calories: cals,
+        intensity
+      });
+      recalculateEnergyAndCoach();
+      renderHistoryTableAndChart();
+      saveStateToStorage();
+      showToast(`Added ${formatDistance(distKm)} run (${cals} kcal) to training log!`, 'emerald');
+    }
+
+    function deleteHistoryItem(id) {
+      appState.history = appState.history.filter(item => item.id !== id);
+      recalculateEnergyAndCoach();
+      renderHistoryTableAndChart();
+      saveStateToStorage();
+      showToast('Run entry removed from log', 'rose');
+    }
+
+    function updateExportTextarea() {
+      const exportObj = {
+        app: 'OpenStride Open-Source Running & Energy Tracker',
+        license: 'MIT',
+        exportedAt: new Date().toISOString(),
+        runnerProfile: {
+          weightKg: appState.weightKg,
+          ageYears: appState.ageYears,
+          sleepHrs: appState.sleepHrs,
+          energyBankPct: appState.energyBankPct,
+          recommendedExerciseMin: appState.recommendedMin,
+          recommendedRestHrs: appState.recommendedRestHrs
+        },
+        runs: appState.history,
+        activeRouteCoordinates: appState.routePoints.slice(0, 25)
+      };
+      const textarea = document.getElementById('exportDataTextarea');
+      if (textarea) textarea.value = JSON.stringify(exportObj, null, 2);
+    }
+
+    function exportRunsJson() {
+      toggleModal('specModal', true);
+      updateExportTextarea();
+      showToast('JSON run & energy log generated for export', 'emerald');
+    }
+
+    function exportLatestGpx() {
+      const ptsXml = appState.routePoints.map(p =>
+        `      <trkpt lat="${p.lat.toFixed(6)}" lon="${p.lng.toFixed(6)}"></trkpt>`
+      ).join('\n');
+      const gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="OpenStride MIT Running Tracker">
+  <trk>
+    <name>OpenStride GPS Run</name>
+    <trkseg>
+${ptsXml}
+    </trkseg>
+  </trk>
+</gpx>`;
+      toggleModal('specModal', true);
+      const textarea = document.getElementById('exportDataTextarea');
+      if (textarea) textarea.value = gpx;
+      showToast('GPX GPS route track generated!', 'sky');
+    }
+
+    function copyExportPayload() {
+      const textarea = document.getElementById('exportDataTextarea');
+      if (!textarea) return;
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Copied open-source data payload to clipboard!', 'emerald');
+      } catch (e) {
+        showToast('Select and press Ctrl+C to copy', 'amber');
+      }
+    }
+
+    // =========================================================
+    // INITIALIZATION & CANVAS DRAG SUPPORT
+    // =========================================================
+    function initCanvasPan() {
+      const canvas = document.getElementById('gpsRouteCanvas');
+      if (!canvas) return;
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      canvas.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        appState.mapOffsetX += (e.clientX - lastX);
+        appState.mapOffsetY += (e.clientY - lastY);
+        lastX = e.clientX;
+        lastY = e.clientY;
+        drawRouteMap();
+      });
+      window.addEventListener('pointerup', () => {
+        dragging = false;
+      });
+      window.addEventListener('resize', () => {
+        drawRouteMap();
+      });
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+    window.onload = function () {
+      loadStateFromStorage();
+      document.getElementById('profileWeight').value = appState.weightKg;
+      document.getElementById('profileAge').value = appState.ageYears;
+      document.getElementById('profileSleep').value = appState.sleepHrs;
+      document.getElementById('profileFitness').value = appState.fitnessLevel;
+      document.getElementById('profileRpe').value = appState.rpeSoreness;
+      initCanvasPan();
+      recalculateEnergyAndCoach();
+      renderSplitsTable();
+      drawRouteMap();
+    };
+  </script>
+</body>
+</html>
