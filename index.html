@@ -27,12 +27,12 @@
         <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-lg">👤</div>
         <div>
           <h3 class="text-base font-extrabold text-white">Runner Profile Setup</h3>
-          <p class="text-xs text-slate-400">Bina login ke record save rahega</p>
+          <p class="text-xs text-slate-400">Make History</p>
         </div>
       </div>
       <div>
-        <label for="runnerNameInput" class="block text-xs text-slate-300 mb-1.5 font-medium">Apna Naam Darj Karein:</label>
-        <input id="runnerNameInput" type="text" placeholder="e.g. Rahul Kumar" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none" />
+        <label for="runnerNameInput" class="block text-xs text-slate-300 mb-1.5 font-medium">Enter Your Name:</label>
+        <input id="runnerNameInput" type="text" placeholder="e.g. Rahul Yadav" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none" />
       </div>
       <button type="button" onclick="saveRunnerName()" class="w-full py-2.5 rounded-xl font-extrabold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg">
         Save &amp; Continue →
@@ -50,10 +50,10 @@
           <div class="flex items-center gap-2">
             <h1 class="text-lg font-extrabold text-white">OpenStride</h1>
             <button type="button" onclick="openNameModal()" class="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400">
-              👤 <span id="headerRunnerName">Set Name</span> ✎
+              👤 <span id="headerRunnerName">Enter Name</span> ✎
             </button>
           </div>
-          <p class="text-xs text-slate-400">GPS Tracker, Auto Pedometer &amp; History</p>
+          <p class="text-xs text-slate-400">GPS-RUN Tracker, Auto Pedometer &amp; History</p>
         </div>
       </div>
 
@@ -86,9 +86,9 @@
               <div class="flex items-center gap-2 w-full sm:w-auto">
                 <label class="text-xs text-slate-400 whitespace-nowrap">Intensity:</label>
                 <select id="pacePresetSelect" onchange="updateIntensity(this.value)" class="w-full sm:w-auto bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5">
-                  <option value="easy">Easy Walk/Jog (7.0 MET)</option>
-                  <option value="moderate" selected>Moderate Run (9.8 MET)</option>
-                  <option value="tempo">Fast Tempo Run (11.5 MET)</option>
+                  <option value="easy">Easy Walk/Jog</option>
+                  <option value="moderate" selected>Moderate Run</option>
+                  <option value="tempo">Fast Tempo Run</option>
                 </select>
               </div>
             </div>
@@ -142,7 +142,6 @@
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 class="text-sm font-bold text-white">Real-Time Route Map</h2>
-                <p class="text-[11px] text-slate-400">Drag map to pan • Use + / − to zoom</p>
               </div>
               <button id="btnToggleGps" type="button" onclick="toggleGpsMode()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                 📡 Connect Real GPS
@@ -178,7 +177,6 @@
           <div>
             <span class="text-xs font-extrabold uppercase tracking-wider text-sky-400">👟 Auto Background Pedometer</span>
             <h2 class="text-xl font-extrabold text-white mt-0.5">Standalone Step Counter</h2>
-            <p class="text-xs text-slate-400">Aapka phone khulte hi ye poore din ke steps automatic ginta rahega.</p>
           </div>
           <span id="pedoStatusBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Active</span>
         </div>
@@ -186,7 +184,11 @@
         <div class="text-center py-6 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-2">
           <div class="text-xs font-bold uppercase tracking-widest text-slate-400">Today's Total Steps</div>
           <div id="pedoStepCount" class="text-6xl sm:text-7xl font-extrabold text-sky-400 mono-num">0</div>
-          <div class="text-xs text-slate-400">Goal: <strong class="text-white mono-num">6,000</strong> steps (<span id="pedoGoalPct" class="text-emerald-400 font-bold mono-num">0%</span>)</div>
+          <div class="text-xs text-slate-400 flex items-center justify-center gap-2">
+            <span>Goal:</span>
+            <input type="number" id="pedoGoalInput" value="6000" step="500" min="500" max="50000" onchange="updatePedoGoal(this.value)" class="w-24 bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-white font-bold text-center mono-num text-xs" />
+            <span>steps (<span id="pedoGoalPct" class="text-emerald-400 font-bold mono-num">0%</span>)</span>
+          </div>
         </div>
 
         <div class="grid grid-cols-3 gap-3 text-center">
@@ -269,6 +271,7 @@
       useRealGps: false, gpsWatchId: null, baseLat: null, baseLng: null, lat: null, lng: null, acc: 0,
       pts: [], mapZoom: 1.0, mapPanX: 0, mapPanY: 0,
       pedoActive: true, pedoSteps: 0, pedoElapsedSec: 0, pedoTimerId: null, stepSensitivity: 'strict',
+      pedoGoal: 6000,
       gravX: 0, gravY: 0, gravZ: 0, lastStepTimestamp: 0, stepPeakArmed: true, history: []
     };
 
@@ -285,6 +288,9 @@
         }
         const savedHist = localStorage.getItem('openstride_real_history_v2');
         if (savedHist) state.history = JSON.parse(savedHist) || [];
+
+        const savedGoal = localStorage.getItem('os_pedo_goal');
+        if (savedGoal) state.pedoGoal = parseInt(savedGoal) || 6000;
 
         const daily = JSON.parse(localStorage.getItem('os_daily_steps') || '{}');
         const today = getTodayKey();
@@ -316,7 +322,7 @@
     function saveRunnerName() {
       const input = document.getElementById('runnerNameInput').value.trim();
       state.runnerName = input || 'Runner';
-            try { localStorage.setItem('openstride_user_name', state.runnerName); } catch (e) {}
+      try { localStorage.setItem('openstride_user_name', state.runnerName); } catch (e) {}
       updateNameDisplays();
       document.getElementById('nameModal').classList.add('hidden');
       showToast(`Welcome, ${state.runnerName}!`, 'emerald');
@@ -366,6 +372,13 @@
       showToast(`Filter: ${val.toUpperCase()}`, 'sky');
     }
 
+    function updatePedoGoal(val) {
+      state.pedoGoal = Math.max(100, parseInt(val) || 6000);
+      localStorage.setItem('os_pedo_goal', state.pedoGoal);
+      updatePedometerUI();
+      showToast(`Step goal updated to ${state.pedoGoal}`, 'sky');
+    }
+
     window.addEventListener('devicemotion', (e) => {
       if (!state.running && !state.pedoActive) return;
       let linX = 0, linY = 0, linZ = 0;
@@ -398,7 +411,13 @@
 
     function updatePedometerUI() {
       document.getElementById('pedoStepCount').textContent = state.pedoSteps;
-      document.getElementById('pedoGoalPct').textContent = `${Math.min(100, Math.round((state.pedoSteps / 6000) * 100))}%`;
+      const pct = Math.min(100, Math.round((state.pedoSteps / state.pedoGoal) * 100));
+      document.getElementById('pedoGoalPct').textContent = `${pct}%`;
+      const goalInput = document.getElementById('pedoGoalInput');
+      if (goalInput && document.activeElement !== goalInput) {
+        goalInput.value = state.pedoGoal;
+      }
+
       const distKm = (state.pedoSteps * 0.74) / 1000;
       const dispDist = state.unit === 'km' ? distKm : distKm * 0.621371;
       document.getElementById('pedoDistance').textContent = `${dispDist.toFixed(2)} ${state.unit}`;
@@ -461,7 +480,7 @@
               state.pts.push({ x: xM, y: yM, lat: latitude, lng: longitude });
             }
           }
-          state.lat = latitude; state.lng = longitude; drawMap();
+state.lat = latitude; state.lng = longitude; drawMap();
         },
         () => {}, { enableHighAccuracy: true, maximumAge: 1000, timeout: 8000 }
       );
