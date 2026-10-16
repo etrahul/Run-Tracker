@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22OpenStride%20GPS%20Tracker%22%2C%22short_name%22%3A%22OpenStride%22%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23090d16%22%2C%22theme_color%22%3A%22%2310b981%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20192%20192'%3E%3Crect%20width%3D'192'%20height%3D'192'%20rx%3D'42'%20fill%3D'%2310b981'%2F%3E%3Ctext%20x%3D'50%25'%20y%3D'55%25'%20font-size%3D'90'%20text-anchor%3D'middle'%20dominant-baseline%3D'middle'%3E🏃%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg+xml%22%7D%5D%7D">
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#10b981" />
@@ -694,6 +696,59 @@ state.lat = latitude; state.lng = longitude; drawMap();
         }
       }, 1000);
     };
+
+    let deferredPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Browser ke default prompt ko rokein taaki hum apna custom popup dikha sakein
+      e.preventDefault();
+      deferredPrompt = e;
+
+      // 3 seconds (3000 ms) ke baad user ko automatic install popup dikhayein
+      setTimeout(() => {
+        if (deferredPrompt) {
+          showInstallPromptBanner();
+        }
+      }, 3000);
+    });
+
+    function showInstallPromptBanner() {
+      // Ek sundar floating banner create karein jo screen ke niche aayega
+      const existing = document.getElementById('customInstallBanner');
+      if (existing) existing.remove();
+
+      const banner = document.createElement('div');
+      banner.id = 'customInstallBanner';
+      banner.className = 'fixed bottom-4 left-4 right-4 z-50 glass-card rounded-2xl p-4 border border-emerald-500/50 shadow-2xl flex items-center justify-between gap-3 animate-bounce-short';
+      banner.innerHTML = `
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📱</span>
+          <div>
+            <div class="text-sm font-extrabold text-white">Install OpenStride App</div>
+            <div class="text-xs text-slate-300">Apne phone ke home screen par add karein!</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="triggerInstall()" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 shadow">Install</button>
+          <button onclick="document.getElementById('customInstallBanner').remove()" class="px-2.5 py-2 rounded-xl text-xs text-slate-400 hover:text-white">✕</button>
+        </div>
+      `;
+      document.body.appendChild(banner);
+    }
+
+    async function triggerInstall() {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        showToast('App installing successfully!', 'emerald');
+      }
+      deferredPrompt = null;
+      const banner = document.getElementById('customInstallBanner');
+      if (banner) banner.remove();
+    }
+
+
   </script>
 </body>
 </html>
