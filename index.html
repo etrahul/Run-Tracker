@@ -316,4 +316,333 @@
     function saveRunnerName() {
       const input = document.getElementById('runnerNameInput').value.trim();
       state.runnerName = input || 'Runner';
-      
+            try { localStorage.setItem('openstride_user_name', state.runnerName); } catch (e) {}
+      updateNameDisplays();
+      document.getElementById('nameModal').classList.add('hidden');
+      showToast(`Welcome, ${state.runnerName}!`, 'emerald');
+    }
+
+    function updateNameDisplays() {
+      document.getElementById('headerRunnerName').textContent = state.runnerName || 'Runner';
+      document.getElementById('historyTitleName').textContent = state.runnerName || 'Runner';
+    }
+
+    function saveHistoryToStorage() {
+      try { localStorage.setItem('openstride_real_history_v2', JSON.stringify(state.history)); } catch (e) {}
+    }
+
+    function showToast(msg, color = 'emerald') {
+      const box = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = `px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold bg-slate-900/95 text-${color}-300 border-${color}-500/60 transition-all`;
+      el.textContent = msg; box.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2800);
+    }
+
+    function switchTab(tab) {
+      ['tracker', 'steps', 'history'].forEach(t => {
+        const panel = document.getElementById('tabPanel' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (panel) panel.classList.toggle('hidden', t !== tab);
+        if (btn) {
+          btn.className = (t === tab)
+            ? 'flex-1 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all bg-emerald-500 text-slate-950 shadow'
+            : 'flex-1 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white';
+        }
+      });
+      if (tab === 'tracker') setTimeout(drawMap, 40);
+      if (tab === 'history') renderHistory();
+    }
+
+    function toggleDistanceUnit() {
+      state.unit = state.unit === 'km' ? 'mi' : 'km';
+      document.getElementById('unitLabel').textContent = state.unit.toUpperCase();
+      document.getElementById('statDistanceUnit').textContent = state.unit;
+      updateTrackerUI(); updatePedometerUI(); renderHistory();
+    }
+
+    function updateStepSensitivity(val) {
+      state.stepSensitivity = val;
+      showToast(`Filter: ${val.toUpperCase()}`, 'sky');
+    }
+
+    window.addEventListener('devicemotion', (e) => {
+      if (!state.running && !state.pedoActive) return;
+      let linX = 0, linY = 0, linZ = 0;
+      if (e.acceleration && e.acceleration.x !== null) {
+        linX = e.acceleration.x; linY = e.acceleration.y; linZ = e.acceleration.z;
+      } else if (e.accelerationIncludingGravity && e.accelerationIncludingGravity.x !== null) {
+        const a = 0.85, ax = e.accelerationIncludingGravity.x, ay = e.accelerationIncludingGravity.y, az = e.accelerationIncludingGravity.z;
+        state.gravX = a * state.gravX + (1 - a) * ax;
+        state.gravY = a * state.gravY + (1 - a) * ay;
+        state.gravZ = a * state.gravZ + (1 - a) * az;
+        linX = ax - state.gravX; linY = ay - state.gravY; linZ = az - state.gravZ;
+      } else return;
+
+      const linearMag = Math.sqrt(linX * linX + linY * linY + linZ * linZ);
+      const filter = STEP_FILTERS[state.stepSensitivity] || STEP_FILTERS.strict;
+      const now = Date.now();
+
+      if (linearMag < 1.2) state.stepPeakArmed = true;
+      if (state.stepPeakArmed && linearMag >= filter.threshold && (now - state.lastStepTimestamp) >= filter.minGapMs) {
+        state.stepPeakArmed = false;
+        state.lastStepTimestamp = now;
+        if (state.running) { state.runSteps++; document.getElementById('statRunSteps').textContent = state.runSteps; }
+        if (state.pedoActive) {
+          state.pedoSteps++;
+          updatePedometerUI();
+          saveDailySteps();
+        }
+      }
+    });
+
+    function updatePedometerUI() {
+      document.getElementById('pedoStepCount').textContent = state.pedoSteps;
+      document.getElementById('pedoGoalPct').textContent = `${Math.min(100, Math.round((state.pedoSteps / 6000) * 100))}%`;
+      const distKm = (state.pedoSteps * 0.74) / 1000;
+      const dispDist = state.unit === 'km' ? distKm : distKm * 0.621371;
+      document.getElementById('pedoDistance').textContent = `${dispDist.toFixed(2)} ${state.unit}`;
+      document.getElementById('pedoCalories').textContent = `${Math.round(state.pedoSteps * 0.045)} kcal`;
+      document.getElementById('pedoTime').textContent = `${Math.floor(state.pedoElapsedSec / 60)}m ${String(state.pedoElapsedSec % 60).padStart(2, '0')}s`;
+    }
+
+    function savePedometerToHistory() {
+      if (state.pedoSteps === 0) return showToast('No steps to save yet!', 'amber');
+      state.history.unshift({
+        date: new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
+        user: state.runnerName || 'Runner', mode: 'Auto Pedometer',
+        distKm: ((state.pedoSteps * 0.74) / 1000).toFixed(2), sec: state.pedoElapsedSec,
+        steps: state.pedoSteps, cals: Math.round(state.pedoSteps * 0.045)
+      });
+      saveHistoryToStorage();
+      showToast(`Saved ${state.pedoSteps} steps to history!`, 'emerald');
+      switchTab('history');
+    }
+
+    function resetPedometer() {
+      state.pedoSteps = 0; state.pedoElapsedSec = 0;
+      saveDailySteps(); updatePedometerUI(); showToast('Step counter reset', 'sky');
+    }
+
+    function toggleGpsMode() {
+      const btn = document.getElementById('btnToggleGps'), status = document.getElementById('gpsStatusBadge');
+      if (!state.useRealGps) {
+        if (!navigator.geolocation) return showToast('GPS not supported.', 'rose');
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            state.useRealGps = true;
+            btn.textContent = '🟢 GPS Connected';
+            status.textContent = 'Live GPS Active'; status.className = 'text-emerald-400 font-bold';
+            state.baseLat = pos.coords.latitude; state.baseLng = pos.coords.longitude;
+            state.lat = pos.coords.latitude; state.lng = pos.coords.longitude;
+            state.acc = pos.coords.accuracy || 5;
+            state.pts = [{ x: 0, y: 0, lat: state.lat, lng: state.lng }];
+            startGpsWatch(); drawMap(); showToast('GPS locked!', 'emerald');
+          },
+          () => showToast('Enable Precise Location in settings.', 'rose'),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      }
+    }
+
+    function startGpsWatch() {
+      if (state.gpsWatchId) navigator.geolocation.clearWatch(state.gpsWatchId);
+      state.gpsWatchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          state.acc = accuracy || 5;
+          if (state.baseLat === null) { state.baseLat = latitude; state.baseLng = longitude; }
+          if (state.running && state.acc <= 20) {
+            const stepKm = haversine(state.lat, state.lng, latitude, longitude);
+            if (stepKm >= 0.003 && stepKm < 0.5) {
+              state.distKm += stepKm;
+              const xM = (longitude - state.baseLng) * 111320 * Math.cos(state.baseLat * Math.PI / 180);
+              const yM = -(latitude - state.baseLat) * 110540;
+              state.pts.push({ x: xM, y: yM, lat: latitude, lng: longitude });
+            }
+          }
+          state.lat = latitude; state.lng = longitude; drawMap();
+        },
+        () => {}, { enableHighAccuracy: true, maximumAge: 1000, timeout: 8000 }
+      );
+    }
+
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371, dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function zoomMap(factor) {
+      state.mapZoom = Math.min(8.0, Math.max(0.25, +(state.mapZoom * factor).toFixed(2)));
+      document.getElementById('zoomLevelText').textContent = `Zoom: ${state.mapZoom}x`;
+      drawMap();
+    }
+
+    function resetMapView() {
+      state.mapZoom = 1.0; state.mapPanX = 0; state.mapPanY = 0;
+      document.getElementById('zoomLevelText').textContent = `Zoom: 1.0x`;
+      drawMap();
+    }
+
+    function initMapDrag() {
+      const canvas = document.getElementById('gpsCanvas');
+      if (!canvas) return;
+      let isDragging = false, startX = 0, startY = 0;
+      canvas.addEventListener('pointerdown', (e) => { isDragging = true; startX = e.clientX; startY = e.clientY; });
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        state.mapPanX += (e.clientX - startX); state.mapPanY += (e.clientY - startY);
+        startX = e.clientX; startY = e.clientY; drawMap();
+      });
+      window.addEventListener('pointerup', () => { isDragging = false; });
+    }
+
+    function drawMap() {
+      const canvas = document.getElementById('gpsCanvas');
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+      const w = rect.width, h = rect.height, cx = w / 2 + state.mapPanX, cy = h / 2 + state.mapPanY, scale = 2.2 * state.mapZoom;
+
+      ctx.fillStyle = '#070b14'; ctx.fillRect(0, 0, w, h);
+      const gridStep = Math.max(18, 36 * state.mapZoom);
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.65)'; ctx.lineWidth = 1;
+      for (let x = (cx % gridStep + gridStep) % gridStep; x < w; x += gridStep) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = (cy % gridStep + gridStep) % gridStep; y < h; y += gridStep) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+
+      if (state.pts.length > 1) {
+        ctx.strokeStyle = '#10b981'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+        state.pts.forEach((p, i) => { const px = cx + p.x * scale, py = cy + p.y * scale; if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); });
+        ctx.stroke();
+      }
+      if (state.pts.length > 0) {
+        const first = state.pts[0], last = state.pts[state.pts.length - 1];
+        ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(cx + first.x * scale, cy + first.y * scale, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(cx + last.x * scale, cy + last.y * scale, 7, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.fillStyle = '#64748b'; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
+      }
+      if (state.lat !== null) document.getElementById('gpsCoordText').textContent = `${state.lat.toFixed(5)}°, ${state.lng.toFixed(5)}°`;
+      document.getElementById('gpsAccText').textContent = `±${state.acc.toFixed(1)} m`;
+    }
+
+    function setRunMode(mode) {
+      if (state.running) return showToast('Pause run first!', 'amber');
+      state.mode = mode;
+      document.getElementById('modeStopwatchBtn').className = mode === 'stopwatch' ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950' : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300';
+      document.getElementById('modeCountdownBtn').className = mode === 'countdown' ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950' : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300';
+      document.getElementById('countdownSetupBox').classList.toggle('hidden', mode !== 'countdown');
+    }
+
+    function syncCustomTimer() {
+      state.targetMs = Math.max(1, parseInt(document.getElementById('inputTimerMin').value, 10) || 20) * 60 * 1000;
+    }
+
+    function updateIntensity(val) { state.intensity = val; }
+
+    function toggleRun() {
+      state.running = !state.running;
+      const dot = document.getElementById('runStatusDot'), txt = document.getElementById('runStatusText');
+      if (state.running) {
+        if (!state.useRealGps) toggleGpsMode();
+        state.lastTick = performance.now();
+        state.timerId = setInterval(onRunTick, 100);
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping';
+        txt.textContent = 'Tracking Real Run';
+        document.getElementById('btnStartPauseText').textContent = 'Pause';
+      } else {
+        clearInterval(state.timerId);
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+        txt.textContent = 'Paused';
+        document.getElementById('btnStartPauseText').textContent = 'Resume';
+      }
+      document.getElementById('btnFinishRun').disabled = (state.elapsedMs === 0 && !state.running);
+    }
+
+    function onRunTick() {
+      const now = performance.now();
+      state.elapsedMs += Math.min(500, now - state.lastTick);
+      state.lastTick = now;
+      state.cals = PRESETS[state.intensity].met * 70 * (state.elapsedMs / 3600000);
+      if (state.mode === 'countdown' && state.elapsedMs >= state.targetMs) {
+        state.elapsedMs = state.targetMs; finishRun(); return;
+      }
+      updateTrackerUI();
+    }
+
+    function updateTrackerUI() {
+      const ms = state.mode === 'countdown' ? Math.max(0, state.targetMs - state.elapsedMs) : state.elapsedMs;
+      const totalSec = Math.floor(ms / 1000), hrs = Math.floor(totalSec / 3600), mins = Math.floor((totalSec % 3600) / 60), secs = totalSec % 60;
+      document.getElementById('mainClockDisplay').innerHTML = `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}<span class="text-3xl text-emerald-400">.${Math.floor((ms % 1000) / 100)}</span>`;
+      document.getElementById('statDistance').textContent = (state.unit === 'km' ? state.distKm : state.distKm * 0.621371).toFixed(2);
+      document.getElementById('statRunSteps').textContent = state.runSteps;
+      document.getElementById('statCalories').textContent = Math.round(state.cals);
+    }
+
+    function finishRun() {
+      if (state.running) toggleRun();
+      state.history.unshift({
+        date: new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
+        user: state.runnerName || 'Runner', mode: 'GPS Run', distKm: state.distKm.toFixed(2),
+        sec: Math.round(state.elapsedMs / 1000), steps: state.runSteps, cals: Math.round(state.cals)
+      });
+      saveHistoryToStorage(); showToast('Run saved!', 'emerald'); resetRun(); switchTab('history');
+    }
+
+    function resetRun() {
+      clearInterval(state.timerId);
+      state.running = false; state.elapsedMs = 0; state.distKm = 0; state.runSteps = 0; state.cals = 0;
+      state.pts = state.lat ? [{ x: 0, y: 0, lat: state.lat, lng: state.lng }] : [];
+      document.getElementById('btnStartPauseText').textContent = 'Start Run';
+      document.getElementById('runStatusDot').className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
+      document.getElementById('runStatusText').textContent = 'Ready to Track';
+      document.getElementById('btnFinishRun').disabled = true;
+      updateTrackerUI(); drawMap();
+    }
+
+    function renderHistory() {
+      const tb = document.getElementById('historyTableBody');
+      if (state.history.length === 0) {
+        tb.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500 font-sans">No saved history yet.</td></tr>`;
+        return;
+      }
+      tb.innerHTML = state.history.map(r => {
+        const dVal = state.unit === 'km' ? parseFloat(r.distKm) : parseFloat(r.distKm) * 0.621371;
+        return `<tr class="hover:bg-slate-900/60">
+          <td class="py-3 px-2 text-slate-300 font-sans">${r.date}</td>
+          <td class="py-3 px-2 font-sans"><strong class="text-white">${r.user}</strong> <span class="text-[10px] text-slate-400 block">${r.mode}</span></td>
+          <td class="py-3 px-2 text-right text-emerald-400 font-bold">${dVal.toFixed(2)} ${state.unit}</td>
+          <td class="py-3 px-2 text-right text-slate-300">${Math.floor(r.sec / 60)}m ${r.sec % 60}s</td>
+          <td class="py-3 px-2 text-right text-sky-400 font-bold">${r.steps}</td>
+          <td class="py-3 px-2 text-right text-amber-400 font-bold">${r.cals} kcal</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function clearAllHistory() {
+      state.history = []; saveHistoryToStorage(); renderHistory(); showToast('History cleared!', 'rose');
+    }
+
+    window.onload = () => {
+      loadFromStorage();
+      initMapDrag();
+      updateTrackerUI();
+      updatePedometerUI();
+      renderHistory();
+      drawMap();
+
+      setInterval(() => {
+        if (state.pedoActive) {
+          state.pedoElapsedSec++;
+          updatePedometerUI();
+          saveDailySteps();
+        }
+      }, 1000);
+    };
+  </script>
+</body>
+</html>
