@@ -6,4 +6,4 @@
 
 ---
 ### 📊 GitHub Stats:
-![Rahul's Github Stats](https://github-readme-stats.vercel.app/api?username=procodeup&show_icons=true&theme=tokyonight)
+![Rahul's Github Stats](https://github-readme-stats.vercel.app/api?username=etrahul&show_icons=true&theme=tokyonight)
