@@ -161,9 +161,8 @@
                 <button type="button" onclick="zoomMap(0.75)" class="w-9 h-9 rounded-xl bg-slate-900/90 text-white font-extrabold border border-slate-700 shadow flex items-center justify-center text-base">−</button>
                 <button type="button" onclick="resetMapView()" class="w-9 h-9 rounded-xl bg-slate-900/90 text-emerald-400 font-bold border border-slate-700 shadow flex items-center justify-center text-sm">⌖</button>
               </div>
-              <div class="absolute bottom-3 left-3 right-3 bg-slate-950/85 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center justify-between text-[11px]">
-                <span class="text-slate-300">Route Map</span>
-                <span id="zoomLevelText" class="text-slate-400 mono-num opacity-0 transition-opacity duration-300">Zoom: 1.0x</span>
+              <div class="absolute bottom-3 right-3 pointer-events-none">
+                <span id="zoomLevelText" class="bg-slate-950/90 border border-slate-800 px-3 py-1 rounded-lg text-xs text-emerald-400 font-bold mono-num opacity-0 transition-opacity duration-300 shadow-lg">Zoom: 1.0x</span>
               </div>
             </div>
           </div>
