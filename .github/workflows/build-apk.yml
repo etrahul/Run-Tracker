@@ -28,9 +28,9 @@ jobs:
       run: |
         npm init -y
         npm install @capacitor/core @capacitor/cli @capacitor/android
-        npx cap init OpenStride com.etrahul.tracker --web-dir . --yes
+        npx cap init OpenStride com.etrahul.tracker --web-dir .
         npx cap add android
-
+        
     - name: Build Debug APK
       run: |
         cd android
