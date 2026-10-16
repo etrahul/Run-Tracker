@@ -5,158 +5,97 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#10b981" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>OpenStride — Real-Time GPS Running, Timer & Smart Tracker</title>
+  <title>OpenStride — Real-Time GPS, Steps & Energy Tracker</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] } } } };
-  </script>
   <style>
-    body { background-color: #090d16; color: #f1f5f9; overflow-x: hidden; }
-    .mono-num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+    body { font-family: 'Inter', sans-serif; background-color: #090d16; color: #f1f5f9; overflow-x: hidden; }
+    .mono-num { font-family: monospace; font-variant-numeric: tabular-nums; }
     .glass-card, select, input { max-width: 100%; box-sizing: border-box; }
     .glass-card { background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.65); }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
   </style>
 </head>
-<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-slate-950">
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
 
-  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4"></div>
 
   <header class="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <svg class="w-6 h-6 text-slate-950" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-        </div>
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg"><span class="text-xl">🏃</span></div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-lg font-extrabold tracking-tight text-white">OpenStride</h1>
-          </div>
-          <p class="text-xs text-slate-400">Welcome, <strong id="runnerNameDisplay" class="text-emerald-400">Runner</strong>! Real-Time Tracker</p>
+          <h1 class="text-lg font-extrabold text-white">OpenStride</h1>
+          <p class="text-xs text-slate-400">GPS, Offline Steps & Local History</p>
         </div>
       </div>
-      <nav class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800" aria-label="Main Tabs">
-        <button id="tabBtnTracker" type="button" onclick="switchTab('tracker')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-emerald-500 text-slate-950 shadow">Live Tracker &amp; Timer</button>
-        <button id="tabBtnEnergy" type="button" onclick="switchTab('energy')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white">Energy &amp; Rest Coach</button>
-        <button id="tabBtnHistory" type="button" onclick="switchTab('history')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white">History Logs</button>
+      <nav class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+        <button id="tabBtnTracker" onclick="switchTab('tracker')" class="px-3.5 py-1.5 rounded-lg text-sm font-semibold bg-emerald-500 text-slate-950 shadow transition-all">Live Tracker</button>
+        <button id="tabBtnHistory" onclick="switchTab('history')" class="px-3.5 py-1.5 rounded-lg text-sm font-semibold text-slate-300 hover:text-white transition-all">My History</button>
       </nav>
       <div class="flex items-center gap-2">
-        <button id="unitToggleBtn" type="button" onclick="toggleDistanceUnit()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-200 hover:border-emerald-500/50 transition">Unit: <span id="unitLabel" class="text-emerald-400 font-bold">KM</span></button>
-        <button id="soundToggleBtn" type="button" onclick="toggleAudioAlerts()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-200 hover:border-emerald-500/50 transition flex items-center gap-1">
-          <span id="soundIcon">🔔</span> <span id="soundLabel" class="hidden sm:inline">Audio On</span>
-        </button>
+        <button onclick="toggleDistanceUnit()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-200">Unit: <span id="unitLabel" class="text-emerald-400 font-bold">KM</span></button>
       </div>
     </div>
   </header>
 
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+    <!-- LIVE TRACKER TAB -->
     <div id="tabPanelTracker" class="space-y-6">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div class="lg:col-span-7 space-y-6">
-          <div class="glass-card rounded-2xl p-5 sm:p-6 space-y-5">
-            
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div class="glass-card rounded-2xl p-5 space-y-5">
+            <div class="flex flex-col sm:flex-row justify-between gap-3 border-b border-slate-800 pb-4">
               <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
-                <button id="modeStopwatchBtn" type="button" onclick="setRunMode('stopwatch')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition">⏱️ Free Stopwatch</button>
-                <button id="modeCountdownBtn" type="button" onclick="setRunMode('countdown')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition">⏳ Set Timer (Countdown)</button>
+                <button id="modeStopwatchBtn" onclick="setRunMode('stopwatch')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950">⏱️ Stopwatch</button>
+                <button id="modeCountdownBtn" onclick="setRunMode('countdown')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300">⏳ Timer Mode</button>
               </div>
               <div class="flex items-center gap-2 w-full sm:w-auto">
-                <label for="pacePresetSelect" class="text-xs text-slate-400 font-medium whitespace-nowrap">Run Intensity:</label>
-                <select id="pacePresetSelect" onchange="updateIntensityPreset(this.value)" class="w-full sm:w-auto bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500">
-                  <option value="easy">Easy Recovery Walk/Jog (7:00 /km)</option>
-                  <option value="moderate" selected>Moderate Run (5:30 /km)</option>
-                  <option value="tempo">Fast Tempo Run (4:35 /km)</option>
+                <label class="text-xs text-slate-400">Intensity:</label>
+                <select id="pacePresetSelect" onchange="updateIntensity(this.value)" class="w-full sm:w-auto bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1.5">
+                  <option value="easy">Easy Walk/Jog</option>
+                  <option value="moderate" selected>Moderate Run</option>
+                  <option value="tempo">Tempo / Fast Run</option>
                 </select>
               </div>
             </div>
 
-            <div id="countdownSetupBox" class="hidden bg-slate-900/90 border border-amber-500/30 rounded-xl p-4 space-y-3">
-              <div class="flex flex-wrap items-center gap-1.5">
-                <span class="text-xs text-slate-400 mr-1">Presets:</span>
-                <button type="button" onclick="setTimerPreset(15, 0)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-amber-500/20 text-amber-300 border border-slate-700 transition">15m</button>
-                <button type="button" onclick="setTimerPreset(30, 0)" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 transition">30m</button>
-              </div>
-              <div class="grid grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label class="block text-[11px] text-slate-400 mb-1">Minutes</label>
-                  <input id="inputTimerMin" type="number" min="0" max="300" value="30" onchange="syncCustomTimerInput()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-bold text-white mono-num focus:border-amber-400 focus:outline-none" />
-                </div>
-                <div>
-                  <label class="block text-[11px] text-slate-400 mb-1">Optional Dist Goal (km)</label>
-                  <input id="inputTargetDistKm" type="number" min="0.5" max="100" step="0.5" value="5.0" onchange="syncCustomTimerInput()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm font-bold text-emerald-400 mono-num focus:border-emerald-400 focus:outline-none" />
-                </div>
-              </div>
+            <div id="mainClockDisplay" class="text-center text-5xl sm:text-6xl font-extrabold text-white mono-num my-4">00:00:00<span class="text-3xl text-emerald-400">.0</span></div>
+
+            <div class="flex flex-wrap items-center justify-center gap-3">
+              <button id="btnStartPause" onclick="toggleRun()" class="px-7 py-3 rounded-xl font-extrabold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg"><span id="btnStartPauseText">Start Run</span></button>
+              <button id="btnFinishRun" onclick="finishRun()" disabled class="px-5 py-3 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 disabled:opacity-40">⏹ Finish & Save</button>
+              <button onclick="resetRun()" class="px-4 py-3 rounded-xl font-semibold bg-slate-900 text-slate-400 border border-slate-800">↺ Reset</button>
             </div>
 
-            <div class="relative flex flex-col items-center justify-center py-4 px-3 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-950 border border-slate-800/90">
-              <div class="flex items-center gap-2 mb-1">
-                <span id="liveStatusDot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
-                <span id="liveStatusLabel" class="text-xs font-bold uppercase tracking-widest text-slate-400">Ready to Start</span>
-              </div>
-              <div id="mainClockDisplay" class="text-5xl sm:text-6xl font-extrabold tracking-tight text-white mono-num my-1">
-                00:00:00<span class="text-2xl sm:text-3xl text-emerald-400">.0</span>
-              </div>
-              <div class="flex flex-wrap items-center justify-center gap-3 mt-5 w-full">
-                <button id="btnStartPause" type="button" onclick="toggleStartPauseRun()" class="px-7 py-3 rounded-xl font-extrabold text-sm sm:text-base bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 transition flex items-center gap-2">
-                  <span id="btnStartPauseIcon">▶</span> <span id="btnStartPauseText">Start Run</span>
-                </button>
-                <button id="btnFinishRun" type="button" onclick="finishAndSaveRun()" disabled class="px-5 py-3 rounded-xl font-bold text-xs sm:text-sm bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 transition">⏹ Finish &amp; Save</button>
-                <button id="btnResetRun" type="button" onclick="resetCurrentRun()" class="px-4 py-3 rounded-xl font-semibold text-xs sm:text-sm bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-300 border border-slate-800 transition">↺ Reset</button>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4">
               <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
-                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Live Steps Sensor</div>
-                <div class="mt-1 flex items-baseline gap-1">
-                  <span id="statSteps" class="text-2xl sm:text-3xl font-extrabold text-sky-400 mono-num">0</span>
-                  <span class="text-xs font-bold text-sky-300">steps</span>
-                </div>
-                <div class="text-[11px] text-slate-400 mt-1">No GPS Required</div>
+                <div class="text-[11px] font-semibold uppercase text-slate-400">Offline Steps</div>
+                <div class="mt-1"><span id="statSteps" class="text-3xl font-extrabold text-sky-400 mono-num">0</span></div>
+                <div class="text-[11px] text-sky-300 mt-1">Sensor Active (No GPS)</div>
               </div>
               <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
-                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Exact Distance</div>
-                <div class="mt-1 flex items-baseline gap-1">
-                  <span id="statDistance" class="text-2xl sm:text-3xl font-extrabold text-white mono-num">0.00</span>
-                  <span id="statDistanceUnit" class="text-xs font-bold text-emerald-400">km</span>
-                </div>
-                <div class="text-[11px] text-emerald-500 mt-1">GPS Validated</div>
+                <div class="text-[11px] font-semibold uppercase text-slate-400">Distance</div>
+                <div class="mt-1"><span id="statDistance" class="text-3xl font-extrabold text-white mono-num">0.00</span> <span class="text-xs text-emerald-400" id="statDistanceUnit">km</span></div>
+                <div class="text-[11px] text-emerald-500 mt-1">GPS Tracking</div>
               </div>
               <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
-                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Active Calories</div>
-                <div class="mt-1 flex items-baseline gap-1">
-                  <span id="statCalories" class="text-2xl sm:text-3xl font-extrabold text-amber-400 mono-num">0</span>
-                  <span class="text-xs font-bold text-amber-300">kcal</span>
-                </div>
+                <div class="text-[11px] font-semibold uppercase text-slate-400">Calories</div>
+                <div class="mt-1"><span id="statCalories" class="text-3xl font-extrabold text-amber-400 mono-num">0</span> <span class="text-xs text-amber-300">kcal</span></div>
               </div>
             </div>
           </div>
         </div>
 
         <div class="lg:col-span-5 space-y-6">
-          <div class="glass-card rounded-2xl p-5 flex flex-col h-full justify-between space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 class="text-sm font-bold text-white">Real-Time GPS Map</h2>
-                <span id="gpsModePill" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Simulated GPS Active</span>
-              </div>
-              <button id="btnToggleGpsSource" type="button" onclick="toggleGpsSource()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-700 transition">📡 Use Real Browser GPS</button>
+          <div class="glass-card rounded-2xl p-5 flex flex-col h-full space-y-4">
+            <div class="flex justify-between items-center">
+              <h2 class="text-sm font-bold">Real-Time Route Map</h2>
+              <button id="btnToggleGps" onclick="toggleGps()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-emerald-400 border border-slate-700">📡 Use Real GPS</button>
             </div>
-            
-            <div class="relative w-full h-80 sm:h-96 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-inner">
-              <canvas id="gpsRouteCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
-              <div class="absolute top-3 left-3 bg-slate-950/85 backdrop-blur-md border border-slate-800 rounded-xl px-3 py-2 text-[11px] space-y-0.5 pointer-events-none">
-                <div class="text-slate-400">Lat: <strong id="gpsLatText" class="text-emerald-400 mono-num">0.0° N</strong></div>
-                <div class="text-slate-400">Lng: <strong id="gpsLngText" class="text-emerald-400 mono-num">0.0° E</strong></div>
-                <div class="text-slate-400">Accuracy: <strong id="gpsAccText" class="text-slate-200 mono-num">±0 m</strong></div>
+            <div class="relative w-full h-80 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
+              <canvas id="gpsCanvas" class="w-full h-full"></canvas>
+              <div class="absolute top-3 left-3 bg-slate-950/80 px-2 py-1 text-[11px] rounded-lg">
+                Acc: <strong id="gpsAccText">±0 m</strong>
               </div>
             </div>
           </div>
@@ -164,32 +103,16 @@
       </div>
     </div>
 
-    <!-- Energy Coach Tab (Simplified for space) -->
-    <div id="tabPanelEnergy" class="hidden space-y-6">
-      <div class="glass-card rounded-2xl p-5 border-t-4 border-t-emerald-500">
-        <h3 class="text-xl font-extrabold text-white">Smart Recovery System Active</h3>
-        <p class="text-sm text-slate-300 mt-2">Energy & rest calculations are running in the background based on your live runs.</p>
-      </div>
-    </div>
-
-    <!-- History Tab -->
+    <!-- HISTORY TAB -->
     <div id="tabPanelHistory" class="hidden space-y-6">
-      <div class="glass-card rounded-2xl p-5 space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="text-sm font-bold text-white">Your Saved Runs (Local Storage)</h2>
-        </div>
-        <div class="overflow-x-auto max-h-72">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="border-b border-slate-800 text-slate-400 uppercase text-[11px]">
-                <th class="py-2 px-2">Date</th>
-                <th class="py-2 px-2 text-right">Distance</th>
-                <th class="py-2 px-2 text-right">Duration</th>
-                <th class="py-2 px-2 text-right">Steps</th>
-                <th class="py-2 px-2 text-right">Energy</th>
-              </tr>
+      <div class="glass-card rounded-2xl p-5">
+        <h2 class="text-sm font-bold mb-4">Your Saved Runs (Local Data)</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="border-b border-slate-800 text-slate-400 uppercase">
+              <tr><th class="py-2">Date</th><th class="py-2 text-right">Distance</th><th class="py-2 text-right">Time</th><th class="py-2 text-right">Steps</th><th class="py-2 text-right">Calories</th></tr>
             </thead>
-            <tbody id="historyTableBody" class="divide-y divide-slate-800/60 text-slate-200 mono-num"></tbody>
+            <tbody id="historyTableBody" class="divide-y divide-slate-800/60 mono-num"></tbody>
           </table>
         </div>
       </div>
@@ -197,145 +120,214 @@
   </main>
 
   <script>
-    const INTENSITY_PRESETS = {
-      easy: { met: 7.0, speed: 8.5 },
-      moderate: { met: 9.8, speed: 10.9 },
-      tempo: { met: 11.5, speed: 13.0 }
+    const PRESETS = { easy: { met: 7.0, speed: 8.5 }, moderate: { met: 9.8, speed: 10.9 }, tempo: { met: 11.5, speed: 13.0 } };
+    
+    let state = {
+      unit: 'km', mode: 'stopwatch', intensity: 'moderate', running: false, elapsedMs: 0,
+      distKm: 0, steps: 0, cals: 0, lastAccel: 0, lastStepTime: 0, timerId: null,
+      useRealGps: false, gpsId: null, lat: 23.3441, lng: 85.3095, acc: 0, simAngle: 0, pts: [], history: []
     };
 
-    const appState = {
-      activeTab: 'tracker',
-      unit: 'km',
-      runMode: 'stopwatch',
-      intensityKey: 'moderate',
-      isRunning: false,
-      isPaused: false,
-      elapsedMs: 0,
-      targetDurationMs: 30 * 60 * 1000,
-      distanceKm: 0,
-      activeCalories: 0,
-      liveSteps: 0,
-      lastAccelMag: 0,
-      lastStepTime: 0,
-      timerIntervalId: null,
-      useRealGps: false,
-      gpsWatchId: null,
-      currentLat: 23.3441,
-      currentLng: 85.3095,
-      currentAccuracy: 0,
-      simAngleRad: 0,
-      routePoints: [],
-      history: []
-    };
-
-    let audioCtx = null;
-    let userName = "";
-
-    function initUserAndStorage() {
-      // Fetch or prompt user name naturally (defaults to Rahul Kumar if left empty)
-      userName = localStorage.getItem('os_username');
-      if (!userName) {
-        userName = prompt("App mein apne profile ka naam darj karein (Local storage ke liye):", "Rahul Kumar");
-        if(!userName) userName = "Runner";
-        localStorage.setItem('os_username', userName);
-      }
-      document.getElementById('runnerNameDisplay').textContent = userName;
-
-      const savedData = localStorage.getItem('os_history');
-      if (savedData) {
-        try { appState.history = JSON.parse(savedData); } catch (e) {}
-      }
-    }
-
-    function showToast(message, type = 'emerald') {
-      const container = document.getElementById('toastContainer');
-      const el = document.createElement('div');
-      el.className = `px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold bg-slate-900/95 text-${type}-300 border-${type}-500/60`;
-      el.innerHTML = `<span>${message}</span>`;
-      container.appendChild(el);
-      setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 250); }, 3400);
-    }
-
-    function playBeep() {
+    function safeStorageLoad() {
       try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.frequency.value = 880;
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-      } catch (e) {}
+        const data = localStorage.getItem('os_history');
+        if (data) state.history = JSON.parse(data);
+      } catch (e) { console.warn('Storage blocked'); }
+    }
+    
+    function safeStorageSave() {
+      try { localStorage.setItem('os_history', JSON.stringify(state.history)); } catch (e) {}
     }
 
-    function switchTab(tabName) {
-      appState.activeTab = tabName;
-      ['tracker', 'energy', 'history'].forEach(t => {
-        document.getElementById('tabPanel' + t.charAt(0).toUpperCase() + t.slice(1))?.classList.toggle('hidden', t !== tabName);
-      });
-      if (tabName === 'history') renderHistoryTable();
-      if (tabName === 'tracker') drawRouteMap();
+    function showToast(msg, color = 'emerald') {
+      const box = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = `px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold bg-slate-900/95 text-${color}-300 border-${color}-500/60`;
+      el.innerHTML = msg;
+      box.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tabPanelTracker').classList.toggle('hidden', tab !== 'tracker');
+      document.getElementById('tabPanelHistory').classList.toggle('hidden', tab !== 'history');
+      if (tab === 'history') renderHistory();
+      if (tab === 'tracker') drawMap();
     }
 
     function toggleDistanceUnit() {
-      appState.unit = appState.unit === 'km' ? 'mi' : 'km';
-      document.getElementById('unitLabel').textContent = appState.unit.toUpperCase();
-      updateTelemetryUI();
+      state.unit = state.unit === 'km' ? 'mi' : 'km';
+      document.getElementById('unitLabel').textContent = state.unit.toUpperCase();
+      document.getElementById('statDistanceUnit').textContent = state.unit;
+      updateUI();
     }
 
     function setRunMode(mode) {
-      if (appState.isRunning) return showToast('Pause before switching modes.', 'amber');
-      appState.runMode = mode;
-      document.getElementById('countdownSetupBox').classList.toggle('hidden', mode !== 'countdown');
+      if (state.running) return showToast('Pause first!', 'amber');
+      state.mode = mode;
+      document.getElementById('modeStopwatchBtn').className = mode === 'stopwatch' ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950' : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300';
+      document.getElementById('modeCountdownBtn').className = mode === 'countdown' ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950' : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300';
     }
 
-    function setTimerPreset(m) {
-      document.getElementById('inputTimerMin').value = m;
-      syncCustomTimerInput();
-    }
+    function updateIntensity(val) { state.intensity = val; }
 
-    function syncCustomTimerInput() {
-      const mins = parseInt(document.getElementById('inputTimerMin').value) || 0;
-      appState.targetDurationMs = Math.max(10000, mins * 60 * 1000);
-    }
-
-    function updateIntensityPreset(key) {
-      if (INTENSITY_PRESETS[key]) appState.intensityKey = key;
-    }
-
-    // Accelerometer Step Counter (No GPS/Internet required)
-    window.addEventListener('devicemotion', (event) => {
-      if (!appState.isRunning || appState.isPaused) return;
-      const acc = event.accelerationIncludingGravity;
+    // Offline Step Counter using Accelerometer
+    window.addEventListener('devicemotion', (e) => {
+      if (!state.running) return;
+      const acc = e.accelerationIncludingGravity;
       if (!acc) return;
-      
-      const magnitude = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
-      const delta = Math.abs(magnitude - appState.lastAccelMag);
+      const mag = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
+      const delta = Math.abs(mag - state.lastAccel);
       const now = Date.now();
       
-      // Threshold 1.5 for step detection, debounce 300ms
-      if (delta > 1.5 && (now - appState.lastStepTime) > 300) {
-        appState.liveSteps++;
-        appState.lastStepTime = now;
-        document.getElementById('statSteps').textContent = appState.liveSteps;
+      // Step threshold logic
+      if (delta > 1.5 && (now - state.lastStepTime) > 300) {
+        state.steps++;
+        state.lastStepTime = now;
+        document.getElementById('statSteps').textContent = state.steps;
       }
-      appState.lastAccelMag = magnitude;
+      state.lastAccel = mag;
     });
 
-    function toggleGpsSource() {
-      const btn = document.getElementById('btnToggleGpsSource');
-      const pill = document.getElementById('gpsModePill');
-
-      if (!appState.useRealGps) {
+    function toggleGps() {
+      if (!state.useRealGps) {
         if (!navigator.geolocation) return showToast('GPS not supported.', 'rose');
         navigator.geolocation.getCurrentPosition(
           (pos) => {
-            appState.useRealGps = true;
-            btn.textContent = '🧪 Switch to Simulated GPS';
-            pill.textContent = 'Real Device GPS Active';
-            pill.className = 'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30';
-            appState.currentLat = pos.coords.latitude;
-            appState.currentLng = pos.coords.longitude;
-   
+            state.useRealGps = true;
+            document.getElementById('btnToggleGps').textContent = '🧪 Back to Simulation';
+            state.lat = pos.coords.latitude; state.lng = pos.coords.longitude;
+            startGps();
+            showToast('Real GPS Connected!', 'emerald');
+          },
+          () => showToast('Allow location in Chrome settings.', 'rose'),
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      } else {
+        if (state.gpsId) navigator.geolocation.clearWatch(state.gpsId);
+        state.useRealGps = false;
+        document.getElementById('btnToggleGps').textContent = '📡 Use Real GPS';
+      }
+    }
+
+    function startGps() {
+      state.gpsId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude, accuracy } = pos.coords;
+          state.acc = accuracy;
+          
+          // STRICT REAL GPS FILTER: Only count if moving outdoors (accuracy < 15m)
+          if (state.running && accuracy <= 15) {
+            const stepKm = haversine(state.lat, state.lng, latitude, longitude);
+            if (stepKm > 0.0005 && stepKm < 1.0) {
+              state.distKm += stepKm;
+              state.pts.push({ lat: latitude, lng: longitude, x: (longitude - state.lng)*95000, y: -(latitude - state.lat)*95000 });
+            }
+          }
+          state.lat = latitude; state.lng = longitude;
+          drawMap();
+        },
+        () => {}, { enableHighAccuracy: true, maximumAge: 1000 }
+      );
+    }
+
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371, dLat = (lat2 - lat1) * Math.PI/180, dLon = (lon2 - lon1) * Math.PI/180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function toggleRun() {
+      state.running = !state.running;
+      if (state.running) {
+        state.lastTick = performance.now();
+        state.timerId = setInterval(tick, 100);
+      } else clearInterval(state.timerId);
+      
+      document.getElementById('btnStartPauseText').textContent = state.running ? 'Pause Run' : 'Start Run';
+      document.getElementById('btnFinishRun').disabled = (!state.running && state.elapsedMs === 0);
+    }
+
+    function tick() {
+      const now = performance.now();
+      state.elapsedMs += Math.min(500, now - state.lastTick);
+      state.lastTick = now;
+
+      if (!state.useRealGps) {
+        const deltaKm = (PRESETS[state.intensity].speed * 100) / 3600000;
+        state.distKm += deltaKm;
+        state.simAngle += deltaKm * 1.65;
+        const x = Math.cos(state.simAngle) * 115, y = Math.sin(state.simAngle) * 82;
+        if (Math.floor(state.elapsedMs / 800) > state.pts.length) state.pts.push({x, y});
+      }
+
+      state.cals = (PRESETS[state.intensity].met * 70 * (state.elapsedMs / 3600000));
+      updateUI(); drawMap();
+    }
+
+    function updateUI() {
+      const s = Math.floor(state.elapsedMs / 1000);
+      document.getElementById('mainClockDisplay').innerHTML = `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}<span class="text-3xl text-emerald-400">.${Math.floor((state.elapsedMs%1000)/100)}</span>`;
+      document.getElementById('statDistance').textContent = (state.unit === 'km' ? state.distKm : state.distKm * 0.621371).toFixed(2);
+      document.getElementById('statCalories').textContent = Math.round(state.cals);
+      document.getElementById('statSteps').textContent = state.steps;
+    }
+
+    function drawMap() {
+      const canvas = document.getElementById('gpsCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d'), w = canvas.clientWidth, h = canvas.clientHeight;
+      canvas.width = w; canvas.height = h;
+      
+      ctx.fillStyle = '#070b14'; ctx.fillRect(0, 0, w, h);
+      const cx = w/2, cy = h/2;
+      
+      if (state.pts.length > 0) {
+        ctx.strokeStyle = '#10b981'; ctx.lineWidth = 4; ctx.beginPath();
+        state.pts.forEach((p, i) => { i === 0 ? ctx.moveTo(cx + p.x, cy + p.y) : ctx.lineTo(cx + p.x, cy + p.y); });
+        ctx.stroke();
+        const last = state.pts[state.pts.length - 1];
+        ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(cx + last.x, cy + last.y, 7, 0, Math.PI*2); ctx.fill();
+      }
+      document.getElementById('gpsAccText').textContent = `±${state.acc.toFixed(1)} m`;
+    }
+
+    function finishRun() {
+      toggleRun();
+      state.history.unshift({
+        date: new Date().toLocaleDateString(),
+        dist: state.distKm.toFixed(2),
+        sec: Math.round(state.elapsedMs / 1000),
+        steps: state.steps,
+        cals: Math.round(state.cals)
+      });
+      safeStorageSave();
+      showToast('Run saved to history!', 'emerald');
+      resetRun(); renderHistory();
+    }
+
+    function resetRun() {
+      if (state.timerId) clearInterval(state.timerId);
+      state.running = false; state.elapsedMs = 0; state.distKm = 0; state.steps = 0; state.cals = 0; state.pts = [];
+      document.getElementById('btnStartPauseText').textContent = 'Start Run';
+      document.getElementById('btnFinishRun').disabled = true;
+      updateUI(); drawMap();
+    }
+
+    function renderHistory() {
+      const tb = document.getElementById('historyTableBody');
+      tb.innerHTML = state.history.map(r => `
+        <tr class="hover:bg-slate-900/60">
+          <td class="py-2.5">${r.date}</td>
+          <td class="py-2.5 text-right text-emerald-400 font-bold">${r.dist} km</td>
+          <td class="py-2.5 text-right">${Math.floor(r.sec/60)}m</td>
+          <td class="py-2.5 text-right text-sky-400">${r.steps}</td>
+          <td class="py-2.5 text-right text-amber-400 font-bold">${r.cals} kcal</td>
+        </tr>
+      `).join('');
+    }
+
+    window.onload = () => { safeStorageLoad(); updateUI(); drawMap(); };
+  </script>
+</body>
+</html>
