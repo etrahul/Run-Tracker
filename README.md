@@ -1,2 +1,9 @@
 # Run-Tracker
-Open-source real-time GPS running tracker, custom countdown timer, calorie burn calculator, and smart exercise &amp; recovery coach for Android &amp; Web.
+### Hi there 👋, I'm Rahul Kumar
+- 💻 Full Stack Web Developer building modern web tools & apps.
+- 🚀 Creator of **OpenStride** (Real-Time GPS Tracker & Pedometer PWA).
+- 🛠️ Tech Stack: JavaScript, Python, HTML/CSS, Tailwind, Git & GitHub.
+
+---
+### 📊 GitHub Stats:
+![Rahul's Github Stats](https://github-readme-stats.vercel.app/api?username=procodeup&show_icons=true&theme=tokyonight)
