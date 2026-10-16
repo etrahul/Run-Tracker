@@ -1,0 +1,26 @@
+{
+  "background_color": "#090d16",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "OpenStride",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "OpenStride",
+  "start_url": "./index.html",
+  "theme_color": "#10b981",
+  "id": "openstride-tracker",
+  "description": "Real-Time GPS Running Tracker & Pedometer",
+  "categories": [
+    "fitness",
+    "health",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
