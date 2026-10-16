@@ -238,11 +238,11 @@
           </div>
         </div>
 
-        <!-- Sensitivity Calibration Control (Fix #3) -->
+                <!-- Sensitivity Calibration Control (Fix #3) -->
         <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-2">
-          <div class="flex items-center justify-between text-xs">
+          <div class="flex flex-col gap-2 text-xs">
             <label for="stepSensitivitySelect" class="font-bold text-slate-300">Motion Filter Sensitivity (Anti-Shake):</label>
-            <select id="stepSensitivitySelect" onchange="updateStepSensitivity(this.value)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-sky-400 font-bold">
+            <select id="stepSensitivitySelect" onchange="updateStepSensitivity(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-sky-400 font-bold">
               <option value="strict" selected>Strict Walking Filter (Ignores Hand Tilts)</option>
               <option value="normal">Normal Pocket Mode</option>
               <option value="high">Very Strict (Firm Jogging Only)</option>
