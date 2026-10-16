@@ -2,332 +2,684 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#10b981" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>OpenStride — Real-Time GPS, Steps & Energy Tracker</title>
+  <title>OpenStride — GPS Tracker, Pedometer & Local History</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #090d16; color: #f1f5f9; overflow-x: hidden; }
-    .mono-num { font-family: monospace; font-variant-numeric: tabular-nums; }
+    .mono-num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
     .glass-card, select, input { max-width: 100%; box-sizing: border-box; }
-    .glass-card { background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.65); }
+    .glass-card { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.65); }
+    canvas { touch-action: none; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
 
+  <!-- Toast Notification -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4"></div>
 
+  <!-- User Name Setup Modal (Fix #1) -->
+  <div id="nameModal" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-sm w-full p-6 space-y-4 border border-emerald-500/40 shadow-2xl">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-lg">👤</div>
+        <div>
+          <h3 class="text-base font-extrabold text-white">Runner Profile Setup</h3>
+          <p class="text-xs text-slate-400">Bina login ke aapka record phone mein save rahega</p>
+        </div>
+      </div>
+      <div>
+        <label for="runnerNameInput" class="block text-xs text-slate-300 mb-1.5 font-medium">Apna Naam Darj Karein:</label>
+        <input id="runnerNameInput" type="text" placeholder="e.g. Rahul Kumar" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none" />
+      </div>
+      <button type="button" onclick="saveRunnerName()" class="w-full py-2.5 rounded-xl font-extrabold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg">
+        Save &amp; Continue →
+      </button>
+    </div>
+  </div>
+
+  <!-- Header & Navigation Tabs (Fix #4) -->
   <header class="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg"><span class="text-xl">🏃</span></div>
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg">
+          <span class="text-xl">🏃</span>
+        </div>
         <div>
-          <h1 class="text-lg font-extrabold text-white">OpenStride</h1>
-          <p class="text-xs text-slate-400">GPS, Offline Steps & Local History</p>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-extrabold text-white">OpenStride</h1>
+            <button type="button" onclick="openNameModal()" class="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400 hover:border-emerald-500/50">
+              👤 <span id="headerRunnerName">Set Name</span> ✎
+            </button>
+          </div>
+          <p class="text-xs text-slate-400">GPS Tracker, Offline Pedometer &amp; Local History</p>
         </div>
       </div>
-      <nav class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
-        <button id="tabBtnTracker" onclick="switchTab('tracker')" class="px-3.5 py-1.5 rounded-lg text-sm font-semibold bg-emerald-500 text-slate-950 shadow transition-all">Live Tracker</button>
-        <button id="tabBtnHistory" onclick="switchTab('history')" class="px-3.5 py-1.5 rounded-lg text-sm font-semibold text-slate-300 hover:text-white transition-all">My History</button>
+
+      <!-- 3 Main Tabs with Dynamic Active Green Highlight -->
+      <nav class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 w-full sm:w-auto justify-between sm:justify-start">
+        <button id="tabBtnTracker" type="button" onclick="switchTab('tracker')" class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all bg-emerald-500 text-slate-950 shadow">
+          Live Tracker
+        </button>
+        <button id="tabBtnSteps" type="button" onclick="switchTab('steps')" class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white">
+          Step Counter
+        </button>
+        <button id="tabBtnHistory" type="button" onclick="switchTab('history')" class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white">
+          My History
+        </button>
       </nav>
-      <div class="flex items-center gap-2">
-        <button onclick="toggleDistanceUnit()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-200">Unit: <span id="unitLabel" class="text-emerald-400 font-bold">KM</span></button>
+
+      <div class="hidden sm:flex items-center gap-2">
+        <button type="button" onclick="toggleDistanceUnit()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-200">
+          Unit: <span id="unitLabel" class="text-emerald-400 font-bold">KM</span>
+        </button>
       </div>
     </div>
   </header>
 
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
-    <!-- LIVE TRACKER TAB -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-5 space-y-6">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: LIVE GPS RUN TRACKER & ZOOMABLE MAP -->
+    <!-- ========================================== -->
     <div id="tabPanelTracker" class="space-y-6">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div class="lg:col-span-7 space-y-6">
+
+        <!-- Left Controls & Telemetry -->
+        <div class="lg:col-span-7 space-y-5">
           <div class="glass-card rounded-2xl p-5 space-y-5">
-            <div class="flex flex-col sm:flex-row justify-between gap-3 border-b border-slate-800 pb-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
               <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
-                <button id="modeStopwatchBtn" onclick="setRunMode('stopwatch')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950">⏱️ Stopwatch</button>
-                <button id="modeCountdownBtn" onclick="setRunMode('countdown')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300">⏳ Timer Mode</button>
+                <button id="modeStopwatchBtn" type="button" onclick="setRunMode('stopwatch')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950">⏱️ Stopwatch</button>
+                <button id="modeCountdownBtn" type="button" onclick="setRunMode('countdown')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300">⏳ Timer</button>
               </div>
               <div class="flex items-center gap-2 w-full sm:w-auto">
-                <label class="text-xs text-slate-400">Intensity:</label>
-                <select id="pacePresetSelect" onchange="updateIntensity(this.value)" class="w-full sm:w-auto bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1.5">
-                  <option value="easy">Easy Walk/Jog</option>
-                  <option value="moderate" selected>Moderate Run</option>
-                  <option value="tempo">Tempo / Fast Run</option>
+                <label class="text-xs text-slate-400 whitespace-nowrap">Intensity:</label>
+                <select id="pacePresetSelect" onchange="updateIntensity(this.value)" class="w-full sm:w-auto bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5">
+                  <option value="easy">Easy Walk/Jog (7.0 MET)</option>
+                  <option value="moderate" selected>Moderate Run (9.8 MET)</option>
+                  <option value="tempo">Fast Tempo Run (11.5 MET)</option>
                 </select>
               </div>
             </div>
 
-            <div id="mainClockDisplay" class="text-center text-5xl sm:text-6xl font-extrabold text-white mono-num my-4">00:00:00<span class="text-3xl text-emerald-400">.0</span></div>
-
-            <div class="flex flex-wrap items-center justify-center gap-3">
-              <button id="btnStartPause" onclick="toggleRun()" class="px-7 py-3 rounded-xl font-extrabold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg"><span id="btnStartPauseText">Start Run</span></button>
-              <button id="btnFinishRun" onclick="finishRun()" disabled class="px-5 py-3 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 disabled:opacity-40">⏹ Finish & Save</button>
-              <button onclick="resetRun()" class="px-4 py-3 rounded-xl font-semibold bg-slate-900 text-slate-400 border border-slate-800">↺ Reset</button>
+            <!-- Countdown Setup -->
+            <div id="countdownSetupBox" class="hidden bg-slate-900/90 border border-amber-500/30 rounded-xl p-3.5 flex items-center justify-between gap-3">
+              <span class="text-xs font-bold text-amber-400">Target Minutes:</span>
+              <input id="inputTimerMin" type="number" min="1" max="240" value="20" onchange="syncCustomTimer()" class="w-24 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1 text-sm font-bold text-white mono-num text-center" />
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4">
-              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
-                <div class="text-[11px] font-semibold uppercase text-slate-400">Offline Steps</div>
-                <div class="mt-1"><span id="statSteps" class="text-3xl font-extrabold text-sky-400 mono-num">0</span></div>
-                <div class="text-[11px] text-sky-300 mt-1">Sensor Active (No GPS)</div>
+            <!-- Main Timer Clock -->
+            <div class="text-center py-2">
+              <div class="flex items-center justify-center gap-2 mb-1">
+                <span id="runStatusDot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                <span id="runStatusText" class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Ready to Track</span>
               </div>
-              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
-                <div class="text-[11px] font-semibold uppercase text-slate-400">Distance</div>
-                <div class="mt-1"><span id="statDistance" class="text-3xl font-extrabold text-white mono-num">0.00</span> <span class="text-xs text-emerald-400" id="statDistanceUnit">km</span></div>
-                <div class="text-[11px] text-emerald-500 mt-1">GPS Tracking</div>
+              <div id="mainClockDisplay" class="text-5xl sm:text-6xl font-extrabold text-white mono-num">
+                00:00:00<span class="text-3xl text-emerald-400">.0</span>
               </div>
-              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5">
-                <div class="text-[11px] font-semibold uppercase text-slate-400">Calories</div>
-                <div class="mt-1"><span id="statCalories" class="text-3xl font-extrabold text-amber-400 mono-num">0</span> <span class="text-xs text-amber-300">kcal</span></div>
+            </div>
+
+            <!-- Run Action Buttons -->
+            <div class="flex flex-wrap items-center justify-center gap-3">
+              <button id="btnStartPause" type="button" onclick="toggleRun()" class="px-7 py-3 rounded-xl font-extrabold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg transition">
+                ▶ <span id="btnStartPauseText">Start Run</span>
+              </button>
+              <button id="btnFinishRun" type="button" onclick="finishRun()" disabled class="px-5 py-3 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 disabled:opacity-40 transition">
+                ⏹ Finish &amp; Save
+              </button>
+              <button type="button" onclick="resetRun()" class="px-4 py-3 rounded-xl font-semibold text-sm bg-slate-900 text-slate-400 border border-slate-800 hover:text-rose-300">
+                ↺ Reset
+              </button>
+            </div>
+
+            <!-- Live Metrics -->
+            <div class="grid grid-cols-3 gap-3 pt-2">
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
+                <div class="text-[10px] font-semibold uppercase text-slate-400">GPS Distance</div>
+                <div class="mt-1"><span id="statDistance" class="text-2xl sm:text-3xl font-extrabold text-white mono-num">0.00</span> <span id="statDistanceUnit" class="text-xs text-emerald-400 font-bold">km</span></div>
+              </div>
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
+                <div class="text-[10px] font-semibold uppercase text-slate-400">Run Steps</div>
+                <div class="mt-1"><span id="statRunSteps" class="text-2xl sm:text-3xl font-extrabold text-sky-400 mono-num">0</span></div>
+              </div>
+              <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
+                <div class="text-[10px] font-semibold uppercase text-slate-400">Calories</div>
+                <div class="mt-1"><span id="statCalories" class="text-2xl sm:text-3xl font-extrabold text-amber-400 mono-num">0</span> <span class="text-xs text-amber-300">kcal</span></div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="lg:col-span-5 space-y-6">
-          <div class="glass-card rounded-2xl p-5 flex flex-col h-full space-y-4">
-            <div class="flex justify-between items-center">
-              <h2 class="text-sm font-bold">Real-Time Route Map</h2>
-              <button id="btnToggleGps" onclick="toggleGps()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-emerald-400 border border-slate-700">📡 Use Real GPS</button>
+        <!-- Right Column: Zoomable & Pannable GPS Route Map (Fix #2) -->
+        <div class="lg:col-span-5 space-y-5">
+          <div class="glass-card rounded-2xl p-5 flex flex-col space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-sm font-bold text-white">Real-Time Route Map</h2>
+                <p class="text-[11px] text-slate-400">Drag map to pan • Use + / − to zoom your route</p>
+              </div>
+              <button id="btnToggleGps" type="button" onclick="toggleGpsMode()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                📡 Connect Real GPS
+              </button>
             </div>
+
             <div class="relative w-full h-80 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
-              <canvas id="gpsCanvas" class="w-full h-full"></canvas>
-              <div class="absolute top-3 left-3 bg-slate-950/80 px-2 py-1 text-[11px] rounded-lg">
-                Acc: <strong id="gpsAccText">±0 m</strong>
+              <canvas id="gpsCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+
+              <!-- Top-Left Coordinate & Accuracy Info -->
+              <div class="absolute top-3 left-3 bg-slate-950/85 backdrop-blur-md border border-slate-800 rounded-xl px-3 py-1.5 text-[11px] space-y-0.5 pointer-events-none">
+                <div id="gpsStatusBadge" class="text-amber-400 font-bold">Mode: Standby (Connect Real GPS)</div>
+                <div class="text-slate-400">Lat/Lng: <span id="gpsCoordText" class="text-slate-200 mono-num">-- , --</span></div>
+                <div class="text-slate-400">Accuracy: <strong id="gpsAccText" class="text-emerald-400 mono-num">±0 m</strong> • Pts: <strong id="gpsPtsCount" class="text-white mono-num">0</strong></div>
+              </div>
+
+              <!-- Top-Right Map Zoom & Recenter Buttons (Fix #2) -->
+              <div class="absolute top-3 right-3 flex flex-col gap-1.5">
+                <button type="button" onclick="zoomMap(1.3)" class="w-9 h-9 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-white font-extrabold border border-slate-700 shadow flex items-center justify-center text-base" title="Zoom In">+</button>
+                <button type="button" onclick="zoomMap(0.75)" class="w-9 h-9 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-white font-extrabold border border-slate-700 shadow flex items-center justify-center text-base" title="Zoom Out">−</button>
+                <button type="button" onclick="resetMapView()" class="w-9 h-9 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-emerald-400 font-bold border border-slate-700 shadow flex items-center justify-center text-sm" title="Fit & Center Route">⌖</button>
+              </div>
+
+              <!-- Bottom Legend -->
+              <div class="absolute bottom-3 left-3 right-3 bg-slate-950/85 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center justify-between text-[11px]">
+                <div class="flex items-center gap-3">
+                  <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> Start</span>
+                  <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> Current</span>
+                </div>
+                <span id="zoomLevelText" class="text-slate-400 mono-num">Zoom: 1.0x</span>
               </div>
             </div>
           </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: STANDALONE OFFLINE STEP COUNTER     -->
+    <!-- ========================================== -->
+    <div id="tabPanelSteps" class="hidden space-y-6">
+      <div class="max-w-2xl mx-auto glass-card rounded-2xl p-6 space-y-6 border-t-4 border-t-sky-500">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
+          <div>
+            <span class="text-xs font-extrabold uppercase tracking-wider text-sky-400">👟 Offline Sensor Pedometer</span>
+            <h2 class="text-xl font-extrabold text-white mt-0.5">Standalone Step Counter (No GPS / No Internet)</h2>
+            <p class="text-xs text-slate-400">Calibrated anti-shake filter: Hath ke mamuli hilne se fake steps count nahi honge.</p>
+          </div>
+          <span id="pedoStatusBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-800 text-slate-300">Paused</span>
+        </div>
+
+        <!-- Big Step Counter Readout -->
+        <div class="text-center py-6 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-2">
+          <div class="text-xs font-bold uppercase tracking-widest text-slate-400">Steps Walked</div>
+          <div id="pedoStepCount" class="text-6xl sm:text-7xl font-extrabold text-sky-400 mono-num">0</div>
+          <div class="text-xs text-slate-400">
+            Goal: <strong class="text-white mono-num">6,000</strong> steps (<span id="pedoGoalPct" class="text-emerald-400 font-bold mono-num">0%</span>)
+          </div>
+        </div>
+
+        <!-- 3 Derived Step Metrics -->
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+            <div class="text-[11px] text-slate-400">Est. Distance</div>
+            <div id="pedoDistance" class="text-xl font-extrabold text-white mono-num mt-1">0.00 km</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+            <div class="text-[11px] text-slate-400">Calories Burned</div>
+            <div id="pedoCalories" class="text-xl font-extrabold text-amber-400 mono-num mt-1">0 kcal</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+            <div class="text-[11px] text-slate-400">Active Walking Time</div>
+            <div id="pedoTime" class="text-xl font-extrabold text-emerald-400 mono-num mt-1">0m 00s</div>
+          </div>
+        </div>
+
+        <!-- Sensitivity Calibration Control (Fix #3) -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <label for="stepSensitivitySelect" class="font-bold text-slate-300">Motion Filter Sensitivity (Anti-Shake):</label>
+            <select id="stepSensitivitySelect" onchange="updateStepSensitivity(this.value)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-sky-400 font-bold">
+              <option value="strict" selected>Strict Walking Filter (Ignores Hand Tilts)</option>
+              <option value="normal">Normal Pocket Mode</option>
+              <option value="high">Very Strict (Firm Jogging Only)</option>
+            </select>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            💡 <strong>How it works:</strong> Uses a low-pass gravity filter and requires at least <strong>0.5 seconds</strong> between real foot strikes so casual hand movements won't add 2–4 fake steps.
+          </p>
+        </div>
+
+        <!-- Step Counter Controls -->
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <button id="btnTogglePedo" type="button" onclick="togglePedometer()" class="px-7 py-3 rounded-xl font-extrabold text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-lg transition">
+            ▶ Start Step Counter
+          </button>
+          <button type="button" onclick="savePedometerToHistory()" class="px-5 py-3 rounded-xl font-bold text-sm bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition">
+            💾 Save Steps to History
+          </button>
+          <button type="button" onclick="resetPedometer()" class="px-4 py-3 rounded-xl font-semibold text-sm bg-slate-900 text-slate-400 border border-slate-800 hover:text-rose-300">
+            ↺ Reset
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- HISTORY TAB -->
+    <!-- ========================================== -->
+    <!-- TAB 3: USER HISTORY LOGS (LOCAL STORAGE)   -->
+    <!-- ========================================== -->
     <div id="tabPanelHistory" class="hidden space-y-6">
-      <div class="glass-card rounded-2xl p-5">
-        <h2 class="text-sm font-bold mb-4">Your Saved Runs (Local Data)</h2>
+      <div class="glass-card rounded-2xl p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-base font-bold text-white"><span id="historyTitleName">Runner</span>'s Saved Activity History</h2>
+            <p class="text-xs text-slate-400">100% Real recorded sessions stored on your device</p>
+          </div>
+          <button type="button" onclick="clearAllHistory()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-300 border border-slate-800">
+            🗑 Clear History
+          </button>
+        </div>
+
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="border-b border-slate-800 text-slate-400 uppercase">
-              <tr><th class="py-2">Date</th><th class="py-2 text-right">Distance</th><th class="py-2 text-right">Time</th><th class="py-2 text-right">Steps</th><th class="py-2 text-right">Calories</th></tr>
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 uppercase text-[11px]">
+                <th class="py-2.5 px-2">Date &amp; Time</th>
+                <th class="py-2.5 px-2">User / Mode</th>
+                <th class="py-2.5 px-2 text-right">Distance</th>
+                <th class="py-2.5 px-2 text-right">Duration</th>
+                <th class="py-2.5 px-2 text-right">Steps</th>
+                <th class="py-2.5 px-2 text-right">Calories</th>
+              </tr>
             </thead>
             <tbody id="historyTableBody" class="divide-y divide-slate-800/60 mono-num"></tbody>
           </table>
         </div>
       </div>
     </div>
+
   </main>
 
-  <script>
-    const PRESETS = { easy: { met: 7.0, speed: 8.5 }, moderate: { met: 9.8, speed: 10.9 }, tempo: { met: 11.5, speed: 13.0 } };
-    
-    let state = {
-      unit: 'km', mode: 'stopwatch', intensity: 'moderate', running: false, elapsedMs: 0,
-      distKm: 0, steps: 0, cals: 0, lastAccel: 0, lastStepTime: 0, timerId: null,
-      useRealGps: false, gpsId: null, lat: 23.3441, lng: 85.3095, acc: 0, simAngle: 0, pts: [], history: []
+    <script>
+    const PRESETS = { easy: { met: 7.0 }, moderate: { met: 9.8 }, tempo: { met: 11.5 } };
+    const STEP_FILTERS = {
+      strict: { threshold: 2.9, minGapMs: 500 },
+      normal: { threshold: 2.2, minGapMs: 440 },
+      high:   { threshold: 3.8, minGapMs: 550 }
     };
 
-    function safeStorageLoad() {
+    const state = {
+      runnerName: '', unit: 'km', mode: 'stopwatch', intensity: 'moderate', targetMs: 20 * 60 * 1000,
+      running: false, elapsedMs: 0, lastTick: 0, timerId: null, distKm: 0, runSteps: 0, cals: 0,
+      useRealGps: false, gpsWatchId: null, baseLat: null, baseLng: null, lat: null, lng: null, acc: 0,
+      pts: [], mapZoom: 1.0, mapPanX: 0, mapPanY: 0,
+      pedoActive: false, pedoSteps: 0, pedoElapsedSec: 0, pedoTimerId: null, stepSensitivity: 'strict',
+      gravX: 0, gravY: 0, gravZ: 0, lastStepTimestamp: 0, stepPeakArmed: true, history: []
+    };
+
+    function loadFromStorage() {
       try {
-        const data = localStorage.getItem('os_history');
-        if (data) state.history = JSON.parse(data);
-      } catch (e) { console.warn('Storage blocked'); }
+        const savedName = localStorage.getItem('openstride_user_name');
+        if (savedName && savedName.trim() !== '') {
+          state.runnerName = savedName.trim();
+          updateNameDisplays();
+        } else {
+          document.getElementById('nameModal').classList.remove('hidden');
+        }
+        const savedHist = localStorage.getItem('openstride_real_history_v2');
+        if (savedHist) state.history = JSON.parse(savedHist) || [];
+      } catch (e) {}
     }
-    
-    function safeStorageSave() {
-      try { localStorage.setItem('os_history', JSON.stringify(state.history)); } catch (e) {}
+
+    function openNameModal() {
+      document.getElementById('runnerNameInput').value = state.runnerName || '';
+      document.getElementById('nameModal').classList.remove('hidden');
+    }
+
+    function saveRunnerName() {
+      const input = document.getElementById('runnerNameInput').value.trim();
+      state.runnerName = input || 'Runner';
+      try { localStorage.setItem('openstride_user_name', state.runnerName); } catch (e) {}
+      updateNameDisplays();
+      document.getElementById('nameModal').classList.add('hidden');
+      showToast(`Welcome, ${state.runnerName}!`, 'emerald');
+    }
+
+    function updateNameDisplays() {
+      document.getElementById('headerRunnerName').textContent = state.runnerName || 'Runner';
+      document.getElementById('historyTitleName').textContent = state.runnerName || 'Runner';
+    }
+
+    function saveHistoryToStorage() {
+      try { localStorage.setItem('openstride_real_history_v2', JSON.stringify(state.history)); } catch (e) {}
     }
 
     function showToast(msg, color = 'emerald') {
       const box = document.getElementById('toastContainer');
       const el = document.createElement('div');
-      el.className = `px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold bg-slate-900/95 text-${color}-300 border-${color}-500/60`;
-      el.innerHTML = msg;
+      el.className = `px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold bg-slate-900/95 text-${color}-300 border-${color}-500/60 transition-all`;
+      el.textContent = msg;
       box.appendChild(el);
-      setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+      setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2800);
     }
 
     function switchTab(tab) {
-      document.getElementById('tabPanelTracker').classList.toggle('hidden', tab !== 'tracker');
-      document.getElementById('tabPanelHistory').classList.toggle('hidden', tab !== 'history');
+      ['tracker', 'steps', 'history'].forEach(t => {
+        const panel = document.getElementById('tabPanel' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (panel) panel.classList.toggle('hidden', t !== tab);
+        if (btn) {
+          btn.className = (t === tab)
+            ? 'flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all bg-emerald-500 text-slate-950 shadow'
+            : 'flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white';
+        }
+      });
+      if (tab === 'tracker') setTimeout(drawMap, 40);
       if (tab === 'history') renderHistory();
-      if (tab === 'tracker') drawMap();
     }
 
     function toggleDistanceUnit() {
       state.unit = state.unit === 'km' ? 'mi' : 'km';
       document.getElementById('unitLabel').textContent = state.unit.toUpperCase();
       document.getElementById('statDistanceUnit').textContent = state.unit;
-      updateUI();
+      updateTrackerUI(); updatePedometerUI(); renderHistory();
     }
 
-    function setRunMode(mode) {
-      if (state.running) return showToast('Pause first!', 'amber');
-      state.mode = mode;
-      document.getElementById('modeStopwatchBtn').className = mode === 'stopwatch' ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950' : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300';
-      document.getElementById('modeCountdownBtn').className = mode === 'countdown' ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950' : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300';
+    function updateStepSensitivity(val) {
+      state.stepSensitivity = val;
+      showToast(`Step filter: ${val.toUpperCase()}`, 'sky');
     }
 
-    function updateIntensity(val) { state.intensity = val; }
-
-    // Offline Step Counter using Accelerometer
     window.addEventListener('devicemotion', (e) => {
-      if (!state.running) return;
-      const acc = e.accelerationIncludingGravity;
-      if (!acc) return;
-      const mag = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
-      const delta = Math.abs(mag - state.lastAccel);
+      if (!state.running && !state.pedoActive) return;
+      let linX = 0, linY = 0, linZ = 0;
+      if (e.acceleration && e.acceleration.x !== null) {
+        linX = e.acceleration.x; linY = e.acceleration.y; linZ = e.acceleration.z;
+      } else if (e.accelerationIncludingGravity && e.accelerationIncludingGravity.x !== null) {
+        const a = 0.85, ax = e.accelerationIncludingGravity.x, ay = e.accelerationIncludingGravity.y, az = e.accelerationIncludingGravity.z;
+        state.gravX = a * state.gravX + (1 - a) * ax;
+        state.gravY = a * state.gravY + (1 - a) * ay;
+        state.gravZ = a * state.gravZ + (1 - a) * az;
+        linX = ax - state.gravX; linY = ay - state.gravY; linZ = az - state.gravZ;
+      } else return;
+
+      const linearMag = Math.sqrt(linX * linX + linY * linY + linZ * linZ);
+      const filter = STEP_FILTERS[state.stepSensitivity] || STEP_FILTERS.strict;
       const now = Date.now();
-      
-      // Step threshold logic
-      if (delta > 1.5 && (now - state.lastStepTime) > 300) {
-        state.steps++;
-        state.lastStepTime = now;
-        document.getElementById('statSteps').textContent = state.steps;
+
+      if (linearMag < 1.2) state.stepPeakArmed = true;
+      if (state.stepPeakArmed && linearMag >= filter.threshold && (now - state.lastStepTimestamp) >= filter.minGapMs) {
+        state.stepPeakArmed = false;
+        state.lastStepTimestamp = now;
+        if (state.running) { state.runSteps++; document.getElementById('statRunSteps').textContent = state.runSteps; }
+        if (state.pedoActive) { state.pedoSteps++; updatePedometerUI(); }
       }
-      state.lastAccel = mag;
     });
 
-    function toggleGps() {
+    function togglePedometer() {
+      state.pedoActive = !state.pedoActive;
+      const btn = document.getElementById('btnTogglePedo'), badge = document.getElementById('pedoStatusBadge');
+      if (state.pedoActive) {
+        btn.textContent = '⏸ Pause Step Counter';
+        btn.className = 'px-7 py-3 rounded-xl font-extrabold text-sm bg-amber-500 text-slate-950 shadow-lg transition';
+        badge.textContent = 'Sensor Active';
+        badge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        state.pedoTimerId = setInterval(() => { state.pedoElapsedSec++; updatePedometerUI(); }, 1000);
+        showToast('Offline Pedometer Started!', 'sky');
+      } else {
+        btn.textContent = '▶ Resume Step Counter';
+        btn.className = 'px-7 py-3 rounded-xl font-extrabold text-sm bg-sky-500 text-slate-950 shadow-lg transition';
+        badge.textContent = 'Paused';
+        badge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-slate-800 text-slate-300';
+        clearInterval(state.pedoTimerId);
+      }
+    }
+
+    function updatePedometerUI() {
+      document.getElementById('pedoStepCount').textContent = state.pedoSteps;
+      document.getElementById('pedoGoalPct').textContent = `${Math.min(100, Math.round((state.pedoSteps / 6000) * 100))}%`;
+      const distKm = (state.pedoSteps * 0.74) / 1000;
+      const dispDist = state.unit === 'km' ? distKm : distKm * 0.621371;
+      document.getElementById('pedoDistance').textContent = `${dispDist.toFixed(2)} ${state.unit}`;
+      document.getElementById('pedoCalories').textContent = `${Math.round(state.pedoSteps * 0.045)} kcal`;
+      document.getElementById('pedoTime').textContent = `${Math.floor(state.pedoElapsedSec / 60)}m ${String(state.pedoElapsedSec % 60).padStart(2, '0')}s`;
+    }
+
+    function savePedometerToHistory() {
+      if (state.pedoSteps === 0) return showToast('Walk a few steps first!', 'amber');
+      if (state.pedoActive) togglePedometer();
+      state.history.unshift({
+        date: new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
+        user: state.runnerName || 'Runner', mode: 'Offline Pedometer',
+        distKm: ((state.pedoSteps * 0.74) / 1000).toFixed(2), sec: state.pedoElapsedSec,
+        steps: state.pedoSteps, cals: Math.round(state.pedoSteps * 0.045)
+      });
+      saveHistoryToStorage();
+      showToast(`Saved ${state.pedoSteps} steps!`, 'emerald');
+      resetPedometer(); switchTab('history');
+    }
+
+    function resetPedometer() {
+      if (state.pedoActive) togglePedometer();
+      state.pedoSteps = 0; state.pedoElapsedSec = 0;
+      document.getElementById('btnTogglePedo').textContent = '▶ Start Step Counter';
+      updatePedometerUI();
+    }
+
+    function toggleGpsMode() {
+      const btn = document.getElementById('btnToggleGps'), status = document.getElementById('gpsStatusBadge');
       if (!state.useRealGps) {
         if (!navigator.geolocation) return showToast('GPS not supported.', 'rose');
+        showToast('Connecting GPS...', 'sky');
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             state.useRealGps = true;
-            document.getElementById('btnToggleGps').textContent = '🧪 Back to Simulation';
+            btn.textContent = '🟢 Real GPS Connected';
+            btn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950';
+            status.textContent = 'Mode: Live Device GPS'; status.className = 'text-emerald-400 font-bold';
+            state.baseLat = pos.coords.latitude; state.baseLng = pos.coords.longitude;
             state.lat = pos.coords.latitude; state.lng = pos.coords.longitude;
-            startGps();
-            showToast('Real GPS Connected!', 'emerald');
+            state.acc = pos.coords.accuracy || 5;
+            state.pts = [{ x: 0, y: 0, lat: state.lat, lng: state.lng }];
+            startGpsWatch(); drawMap(); showToast('Real GPS locked!', 'emerald');
           },
-          () => showToast('Allow location in Chrome settings.', 'rose'),
-          { enableHighAccuracy: true, timeout: 10000 }
+          () => showToast('Enable Precise Location in settings.', 'rose'),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
-      } else {
-        if (state.gpsId) navigator.geolocation.clearWatch(state.gpsId);
-        state.useRealGps = false;
-        document.getElementById('btnToggleGps').textContent = '📡 Use Real GPS';
       }
     }
 
-    function startGps() {
-      state.gpsId = navigator.geolocation.watchPosition(
+    function startGpsWatch() {
+      if (state.gpsWatchId) navigator.geolocation.clearWatch(state.gpsWatchId);
+      state.gpsWatchId = navigator.geolocation.watchPosition(
         (pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
-          state.acc = accuracy;
-          
-          // STRICT REAL GPS FILTER: Only count if moving outdoors (accuracy < 15m)
-          if (state.running && accuracy <= 15) {
+          state.acc = accuracy || 5;
+          if (state.baseLat === null) { state.baseLat = latitude; state.baseLng = longitude; }
+          if (state.running && state.acc <= 20) {
             const stepKm = haversine(state.lat, state.lng, latitude, longitude);
-            if (stepKm > 0.0005 && stepKm < 1.0) {
+            if (stepKm >= 0.003 && stepKm < 0.5) {
               state.distKm += stepKm;
-              state.pts.push({ lat: latitude, lng: longitude, x: (longitude - state.lng)*95000, y: -(latitude - state.lat)*95000 });
+              const xM = (longitude - state.baseLng) * 111320 * Math.cos(state.baseLat * Math.PI / 180);
+              const yM = -(latitude - state.baseLat) * 110540;
+              state.pts.push({ x: xM, y: yM, lat: latitude, lng: longitude });
             }
           }
-          state.lat = latitude; state.lng = longitude;
-          drawMap();
+          state.lat = latitude; state.lng = longitude; drawMap();
         },
-        () => {}, { enableHighAccuracy: true, maximumAge: 1000 }
+        () => {}, { enableHighAccuracy: true, maximumAge: 1000, timeout: 8000 }
       );
     }
 
     function haversine(lat1, lon1, lat2, lon2) {
-      const R = 6371, dLat = (lat2 - lat1) * Math.PI/180, dLon = (lon2 - lon1) * Math.PI/180;
-      const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+      const R = 6371, dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    function toggleRun() {
-      state.running = !state.running;
-      if (state.running) {
-        state.lastTick = performance.now();
-        state.timerId = setInterval(tick, 100);
-      } else clearInterval(state.timerId);
-      
-      document.getElementById('btnStartPauseText').textContent = state.running ? 'Pause Run' : 'Start Run';
-      document.getElementById('btnFinishRun').disabled = (!state.running && state.elapsedMs === 0);
+    function zoomMap(factor) {
+      state.mapZoom = Math.min(8.0, Math.max(0.25, +(state.mapZoom * factor).toFixed(2)));
+      document.getElementById('zoomLevelText').textContent = `Zoom: ${state.mapZoom}x`;
+      drawMap();
     }
 
-    function tick() {
-      const now = performance.now();
-      state.elapsedMs += Math.min(500, now - state.lastTick);
-      state.lastTick = now;
-
-      if (!state.useRealGps) {
-        const deltaKm = (PRESETS[state.intensity].speed * 100) / 3600000;
-        state.distKm += deltaKm;
-        state.simAngle += deltaKm * 1.65;
-        const x = Math.cos(state.simAngle) * 115, y = Math.sin(state.simAngle) * 82;
-        if (Math.floor(state.elapsedMs / 800) > state.pts.length) state.pts.push({x, y});
-      }
-
-      state.cals = (PRESETS[state.intensity].met * 70 * (state.elapsedMs / 3600000));
-      updateUI(); drawMap();
+    function resetMapView() {
+      state.mapZoom = 1.0; state.mapPanX = 0; state.mapPanY = 0;
+      document.getElementById('zoomLevelText').textContent = `Zoom: 1.0x`;
+      drawMap(); showToast('Map centered', 'sky');
     }
 
-    function updateUI() {
-      const s = Math.floor(state.elapsedMs / 1000);
-      document.getElementById('mainClockDisplay').innerHTML = `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}<span class="text-3xl text-emerald-400">.${Math.floor((state.elapsedMs%1000)/100)}</span>`;
-      document.getElementById('statDistance').textContent = (state.unit === 'km' ? state.distKm : state.distKm * 0.621371).toFixed(2);
-      document.getElementById('statCalories').textContent = Math.round(state.cals);
-      document.getElementById('statSteps').textContent = state.steps;
+    function initMapDrag() {
+      const canvas = document.getElementById('gpsCanvas');
+      if (!canvas) return;
+      let isDragging = false, startX = 0, startY = 0;
+      canvas.addEventListener('pointerdown', (e) => { isDragging = true; startX = e.clientX; startY = e.clientY; });
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        state.mapPanX += (e.clientX - startX); state.mapPanY += (e.clientY - startY);
+        startX = e.clientX; startY = e.clientY; drawMap();
+      });
+      window.addEventListener('pointerup', () => { isDragging = false; });
     }
 
     function drawMap() {
       const canvas = document.getElementById('gpsCanvas');
       if (!canvas) return;
-      const ctx = canvas.getContext('2d'), w = canvas.clientWidth, h = canvas.clientHeight;
-      canvas.width = w; canvas.height = h;
-      
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+      const w = rect.width, h = rect.height, cx = w / 2 + state.mapPanX, cy = h / 2 + state.mapPanY, scale = 2.2 * state.mapZoom;
+
       ctx.fillStyle = '#070b14'; ctx.fillRect(0, 0, w, h);
-      const cx = w/2, cy = h/2;
-      
-      if (state.pts.length > 0) {
-        ctx.strokeStyle = '#10b981'; ctx.lineWidth = 4; ctx.beginPath();
-        state.pts.forEach((p, i) => { i === 0 ? ctx.moveTo(cx + p.x, cy + p.y) : ctx.lineTo(cx + p.x, cy + p.y); });
+      const gridStep = Math.max(18, 36 * state.mapZoom);
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.65)'; ctx.lineWidth = 1;
+      for (let x = (cx % gridStep + gridStep) % gridStep; x < w; x += gridStep) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = (cy % gridStep + gridStep) % gridStep; y < h; y += gridStep) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+
+      if (state.pts.length > 1) {
+        ctx.strokeStyle = '#10b981'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+        state.pts.forEach((p, i) => { const px = cx + p.x * scale, py = cy + p.y * scale; if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); });
         ctx.stroke();
-        const last = state.pts[state.pts.length - 1];
-        ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(cx + last.x, cy + last.y, 7, 0, Math.PI*2); ctx.fill();
       }
+      if (state.pts.length > 0) {
+        const first = state.pts[0], last = state.pts[state.pts.length - 1];
+        ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(cx + first.x * scale, cy + first.y * scale, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(cx + last.x * scale, cy + last.y * scale, 7, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.fillStyle = '#64748b'; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
+      }
+      if (state.lat !== null) document.getElementById('gpsCoordText').textContent = `${state.lat.toFixed(5)}°, ${state.lng.toFixed(5)}°`;
       document.getElementById('gpsAccText').textContent = `±${state.acc.toFixed(1)} m`;
+      document.getElementById('gpsPtsCount').textContent = state.pts.length;
+    }
+
+    function setRunMode(mode) {
+      if (state.running) return showToast('Pause run first!', 'amber');
+      state.mode = mode;
+      document.getElementById('modeStopwatchBtn').className = mode === 'stopwatch' ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950' : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300';
+      document.getElementById('modeCountdownBtn').className = mode === 'countdown' ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950' : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300';
+      document.getElementById('countdownSetupBox').classList.toggle('hidden', mode !== 'countdown');
+      updateTrackerUI();
+    }
+
+    function syncCustomTimer() {
+      state.targetMs = Math.max(1, parseInt(document.getElementById('inputTimerMin').value, 10) || 20) * 60 * 1000;
+      updateTrackerUI();
+    }
+
+    function updateIntensity(val) { state.intensity = val; }
+
+    function toggleRun() {
+      state.running = !state.running;
+      const dot = document.getElementById('runStatusDot'), txt = document.getElementById('runStatusText');
+      if (state.running) {
+        if (!state.useRealGps) toggleGpsMode();
+        state.lastTick = performance.now();
+        state.timerId = setInterval(onRunTick, 100);
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping';
+        txt.textContent = 'Tracking Real Run';
+        document.getElementById('btnStartPauseText').textContent = 'Pause';
+      } else {
+        clearInterval(state.timerId);
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+        txt.textContent = 'Paused';
+        document.getElementById('btnStartPauseText').textContent = 'Resume';
+      }
+      document.getElementById('btnFinishRun').disabled = (state.elapsedMs === 0 && !state.running);
+    }
+
+    function onRunTick() {
+      const now = performance.now();
+      state.elapsedMs += Math.min(500, now - state.lastTick);
+      state.lastTick = now;
+      state.cals = PRESETS[state.intensity].met * 70 * (state.elapsedMs / 3600000);
+      if (state.mode === 'countdown' && state.elapsedMs >= state.targetMs) {
+        state.elapsedMs = state.targetMs; finishRun(); return;
+      }
+      updateTrackerUI();
+    }
+
+    function updateTrackerUI() {
+      const ms = state.mode === 'countdown' ? Math.max(0, state.targetMs - state.elapsedMs) : state.elapsedMs;
+      const totalSec = Math.floor(ms / 1000), hrs = Math.floor(totalSec / 3600), mins = Math.floor((totalSec % 3600) / 60), secs = totalSec % 60;
+      document.getElementById('mainClockDisplay').innerHTML = `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}<span class="text-3xl text-emerald-400">.${Math.floor((ms % 1000) / 100)}</span>`;
+      document.getElementById('statDistance').textContent = (state.unit === 'km' ? state.distKm : state.distKm * 0.621371).toFixed(2);
+      document.getElementById('statRunSteps').textContent = state.runSteps;
+      document.getElementById('statCalories').textContent = Math.round(state.cals);
     }
 
     function finishRun() {
-      toggleRun();
+      if (state.running) toggleRun();
       state.history.unshift({
-        date: new Date().toLocaleDateString(),
-        dist: state.distKm.toFixed(2),
-        sec: Math.round(state.elapsedMs / 1000),
-        steps: state.steps,
-        cals: Math.round(state.cals)
+        date: new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
+        user: state.runnerName || 'Runner', mode: 'GPS Run', distKm: state.distKm.toFixed(2),
+        sec: Math.round(state.elapsedMs / 1000), steps: state.runSteps, cals: Math.round(state.cals)
       });
-      safeStorageSave();
-      showToast('Run saved to history!', 'emerald');
-      resetRun(); renderHistory();
+      saveHistoryToStorage(); showToast('Run saved!', 'emerald'); resetRun(); switchTab('history');
     }
 
     function resetRun() {
-      if (state.timerId) clearInterval(state.timerId);
-      state.running = false; state.elapsedMs = 0; state.distKm = 0; state.steps = 0; state.cals = 0; state.pts = [];
+      clearInterval(state.timerId);
+      state.running = false; state.elapsedMs = 0; state.distKm = 0; state.runSteps = 0; state.cals = 0;
+      state.pts = state.lat ? [{ x: 0, y: 0, lat: state.lat, lng: state.lng }] : [];
       document.getElementById('btnStartPauseText').textContent = 'Start Run';
+      document.getElementById('runStatusDot').className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
+      document.getElementById('runStatusText').textContent = 'Ready to Track';
       document.getElementById('btnFinishRun').disabled = true;
-      updateUI(); drawMap();
+      updateTrackerUI(); drawMap();
     }
 
     function renderHistory() {
       const tb = document.getElementById('historyTableBody');
-      tb.innerHTML = state.history.map(r => `
-        <tr class="hover:bg-slate-900/60">
-          <td class="py-2.5">${r.date}</td>
-          <td class="py-2.5 text-right text-emerald-400 font-bold">${r.dist} km</td>
-          <td class="py-2.5 text-right">${Math.floor(r.sec/60)}m</td>
-          <td class="py-2.5 text-right text-sky-400">${r.steps}</td>
-          <td class="py-2.5 text-right text-amber-400 font-bold">${r.cals} kcal</td>
-        </tr>
-      `).join('');
+      if (state.history.length === 0) {
+        tb.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500 font-sans">Abhi tak koi activity save nahi hui hai.</td></tr>`;
+        return;
+      }
+      tb.innerHTML = state.history.map(r => {
+        const dVal = state.unit === 'km' ? parseFloat(r.distKm) : parseFloat(r.distKm) * 0.621371;
+        return `<tr class="hover:bg-slate-900/60">
+          <td class="py-3 px-2 text-slate-300 font-sans">${r.date}</td>
+          <td class="py-3 px-2 font-sans"><strong class="text-white">${r.user}</strong> <span class="text-[10px] text-slate-400 block">${r.mode}</span></td>
+          <td class="py-3 px-2 text-right text-emerald-400 font-bold">${dVal.toFixed(2)} ${state.unit}</td>
+          <td class="py-3 px-2 text-right text-slate-300">${Math.floor(r.sec / 60)}m ${r.sec % 60}s</td>
+          <td class="py-3 px-2 text-right text-sky-400 font-bold">${r.steps}</td>
+          <td class="py-3 px-2 text-right text-amber-400 font-bold">${r.cals} kcal</td>
+        </tr>`;
+      }).join('');
     }
 
-    window.onload = () => { safeStorageLoad(); updateUI(); drawMap(); };
+    function clearAllHistory() {
+      state.history = []; saveHistoryToStorage(); renderHistory(); showToast('History cleared!', 'rose');
+    }
+
+    window.onload = () => {
+      loadFromStorage(); initMapDrag(); updateTrackerUI(); updatePedometerUI(); renderHistory(); drawMap();
+    };
   </script>
 </body>
 </html>
