@@ -630,28 +630,45 @@
       saveDailySteps(); updatePedometerUI(); showToast('Step counter reset', 'sky');
     }
 
-    function toggleGpsMode() {
+        function toggleGpsMode() {
       const btn = document.getElementById('btnToggleGps'), status = document.getElementById('gpsStatusBadge');
       if (!state.useRealGps) {
         if (!navigator.geolocation) return showToast('GPS not supported.', 'rose');
+        
+        status.textContent = 'Connecting GPS...';
+        status.className = 'text-amber-400 font-bold';
+
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             state.useRealGps = true;
             btn.textContent = '🟢 GPS Connected';
-            status.textContent = 'Live GPS Active'; status.className = 'text-emerald-400 font-bold';
-            state.baseLat = pos.coords.latitude; state.baseLng = pos.coords.longitude;
-            state.lat = pos.coords.latitude; state.lng = pos.coords.longitude;
+            status.textContent = 'Live GPS Active'; 
+            status.className = 'text-emerald-400 font-bold';
+            state.baseLat = pos.coords.latitude; 
+            state.baseLng = pos.coords.longitude;
+            state.lat = pos.coords.latitude; 
+            state.lng = pos.coords.longitude;
             state.acc = pos.coords.accuracy || 5;
             state.pts = [{ x: 0, y: 0, lat: state.lat, lng: state.lng }];
-            startGpsWatch(); drawMap(); showToast('GPS locked!', 'emerald');
+            startGpsWatch(); 
+            drawMap(); 
+            showToast('GPS locked!', 'emerald');
             speakCoach("GPS connected and locked.");
           },
-          () => showToast('Enable Precise Location in settings.', 'rose'),
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          (err) => {
+            // Soft fallback so it doesn't annoy with strict errors if GPS takes a moment
+            state.useRealGps = true;
+            btn.textContent = '🟢 GPS Active (Waiting Lock)';
+            status.textContent = 'Searching Satellite...'; 
+            status.className = 'text-sky-400 font-bold';
+            startGpsWatch();
+            showToast('Searching for GPS satellites...', 'sky');
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         );
       }
     }
-
+    
     function startGpsWatch() {
       if (state.gpsWatchId) navigator.geolocation.clearWatch(state.gpsWatchId);
       state.gpsWatchId = navigator.geolocation.watchPosition(
