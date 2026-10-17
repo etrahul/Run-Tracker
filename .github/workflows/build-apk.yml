@@ -43,14 +43,18 @@ jobs:
         mkdir -p app/src/main/res/drawable
         
         cp index.html app/src/main/assets/public/
+        if [ -f sw.js ]; then cp sw.js app/src/main/assets/public/; fi
         if [ -f icon.png ]; then 
           cp icon.png app/src/main/assets/public/; 
           cp icon.png app/src/main/res/drawable/app_icon.png;
         fi
         if [ -f manifest.json ]; then cp manifest.json app/src/main/assets/public/; fi
 
-    - name: Create Clean Gradle Project Files
+    - name: Create Fixed Keystore & Gradle Project Files
       run: |
+        # Deterministic keystore taaki har baar bina uninstall kiye app seedha UPDATE ho sake
+        keytool -genkey -v -keystore openstride.keystore -alias openstride -keyalg RSA -keysize 2048 -validity 10000 -storepass openstride123 -keypass openstride123 -dname "CN=Rahul Kumar, OU=OpenStride, O=OpenStride, L=Dumka, S=Jharkhand, C=IN"
+
         cat << 'EOF' > settings.gradle
         pluginManagement {
             repositories {
@@ -80,8 +84,25 @@ jobs:
                 applicationId "com.etrahul.openstride"
                 minSdk 24
                 targetSdk 34
-                versionCode 1
-                versionName "1.0"
+                versionCode 2
+                versionName "3.0"
+            }
+            signingConfigs {
+                fixedConfig {
+                    storeFile file("../openstride.keystore")
+                    storePassword "openstride123"
+                    keyAlias "openstride"
+                    keyPassword "openstride123"
+                }
+            }
+            buildTypes {
+                debug {
+                    signingConfig signingConfigs.fixedConfig
+                }
+                release {
+                    signingConfig signingConfigs.fixedConfig
+                    minifyEnabled false
+                }
             }
         }
         EOF
@@ -90,25 +111,181 @@ jobs:
         cat << 'EOF' > app/src/main/java/com/etrahul/openstride/MainActivity.java
         package com.etrahul.openstride;
 
+        import android.Manifest;
         import android.app.Activity;
+        import android.content.Intent;
+        import android.content.pm.PackageManager;
+        import android.net.Uri;
+        import android.os.Build;
         import android.os.Bundle;
+        import android.os.Environment;
+        import android.provider.Settings;
+        import android.webkit.GeolocationPermissions;
+        import android.webkit.JavascriptInterface;
+        import android.webkit.ValueCallback;
+        import android.webkit.WebChromeClient;
+        import android.webkit.WebSettings;
         import android.webkit.WebView;
         import android.webkit.WebViewClient;
+        import android.widget.Toast;
+        import java.io.File;
+        import java.io.FileOutputStream;
+        import java.util.ArrayList;
+        import java.util.List;
 
         public class MainActivity extends Activity {
+            private WebView webView;
+            private ValueCallback<Uri[]> filePathCallback;
+            private static final int FILE_CHOOSER_RESULT_CODE = 1001;
+            private static final int PERMISSION_REQUEST_CODE = 1002;
+
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
-                WebView webView = new WebView(this);
-                webView.getSettings().setJavaScriptEnabled(true);
-                webView.getSettings().setDomStorageEnabled(true);
-                webView.getSettings().setGeolocationEnabled(true);
-                webView.getSettings().setLoadWithOverviewMode(true);
-                webView.getSettings().setUseWideViewPort(true);
-                webView.clearCache(true);
+                webView = new WebView(this);
+                WebSettings settings = webView.getSettings();
+                settings.setJavaScriptEnabled(true);
+                settings.setDomStorageEnabled(true);
+                settings.setDatabaseEnabled(true);
+                settings.setGeolocationEnabled(true);
+                settings.setAllowFileAccess(true);
+                settings.setAllowContentAccess(true);
+                settings.setLoadWithOverviewMode(true);
+                settings.setUseWideViewPort(true);
+                settings.setMediaPlaybackRequiresUserGesture(false);
+
+                webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
                 webView.setWebViewClient(new WebViewClient());
-                webView.loadUrl("file:///android_asset/public/index.html");
+
+                webView.setWebChromeClient(new WebChromeClient() {
+                    @Override
+                    public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                        callback.invoke(origin, true, false);
+                    }
+
+                    @Override
+                    public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                        if (MainActivity.this.filePathCallback != null) {
+                            MainActivity.this.filePathCallback.onReceiveValue(null);
+                        }
+                        MainActivity.this.filePathCallback = filePathCallback;
+                        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                        intent.addCategory(Intent.CATEGORY_OPENABLE);
+                        intent.setType("*/*");
+                        startActivityForResult(Intent.createChooser(intent, "Select Backup JSON"), FILE_CHOOSER_RESULT_CODE);
+                        return true;
+                    }
+                });
+
                 setContentView(webView);
+                requestRequiredPermissions();
+                webView.loadUrl("file:///android_asset/public/index.html");
+            }
+
+            private void requestRequiredPermissions() {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    List<String> permissionsNeeded = new ArrayList<>();
+                    if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        permissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
+                    }
+                    if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        permissionsNeeded.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        if (checkSelfPermission(Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) {
+                            permissionsNeeded.add(Manifest.permission.ACTIVITY_RECOGNITION);
+                        }
+                    }
+                    if (!permissionsNeeded.isEmpty()) {
+                        requestPermissions(permissionsNeeded.toArray(new String[0]), PERMISSION_REQUEST_CODE);
+                    }
+                }
+            }
+
+            @Override
+            public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+                if (requestCode == PERMISSION_REQUEST_CODE) {
+                    webView. evaluateJavascript("if(window.checkPermissionAndProceed) window.checkPermissionAndProceed();", null);
+                }
+            }
+
+            @Override
+            protected void onResume() {
+                super.onResume();
+                if (webView != null) {
+                    webView.evaluateJavascript("if(window.checkPermissionAndProceed) window.checkPermissionAndProceed();", null);
+                }
+            }
+
+            @Override
+            protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+                if (requestCode == FILE_CHOOSER_RESULT_CODE) {
+                    if (filePathCallback == null) return;
+                    Uri[] results = null;
+                    if (resultCode == Activity.RESULT_OK && data != null) {
+                        String dataString = data.getDataString();
+                        if (dataString != null) {
+                            results = new Uri[]{Uri.parse(dataString)};
+                        }
+                    }
+                    filePathCallback.onReceiveValue(results);
+                    filePathCallback = null;
+                } else {
+                    super.onActivityResult(requestCode, resultCode, data);
+                }
+            }
+
+            @Override
+            public void onBackPressed() {
+                if (webView != null && webView.canGoBack()) {
+                    webView.goBack();
+                } else {
+                    super.onBackPressed();
+                }
+            }
+
+            public class WebAppInterface {
+                @JavascriptInterface
+                public void openAppSettings() {
+                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    Uri uri = Uri.fromParts("package", getPackageName(), null);
+                    intent.setData(uri);
+                    startActivity(intent);
+                }
+
+                @JavascriptInterface
+                public void closeApp() {
+                    finishAffinity();
+                    System.exit(0);
+                }
+
+                @JavascriptInterface
+                public boolean hasLocationPermission() {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                    }
+                    return true;
+                }
+
+                @JavascriptInterface
+                public void askPermissions() {
+                    runOnUiThread(() -> requestRequiredPermissions());
+                }
+
+                @JavascriptInterface
+                public void saveBackupFile(String jsonContent, String fileName) {
+                    try {
+                        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                        File file = new File(dir, fileName);
+                        FileOutputStream fos = new FileOutputStream(file);
+                        fos.write(jsonContent.getBytes());
+                        fos.close();
+                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "Saved to Downloads: " + fileName, Toast.LENGTH_LONG).show());
+                    } catch (Exception e) {
+                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "Export Error: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                    }
+                }
             }
         }
         EOF
@@ -124,10 +301,12 @@ jobs:
                 android:allowBackup="true" 
                 android:label="OpenStride"
                 android:icon="@drawable/app_icon"
-                android:roundIcon="@drawable/app_icon">
+                android:roundIcon="@drawable/app_icon"
+                android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
                 <activity 
                     android:name=".MainActivity" 
-                    android:exported="true">
+                    android:exported="true"
+                    android:configChanges="orientation|screenSize|keyboardHidden">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
                         <category android:name="android.intent.category.LAUNCHER" />
@@ -143,9 +322,10 @@ jobs:
         gradle wrapper
         chmod +x gradlew
         ./gradlew assembleDebug -x lint
+        cp app/build/outputs/apk/debug/app-debug.apk OpenStride.apk
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: OpenStride-Android-APK
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: OpenStride
+        path: OpenStride.apk
