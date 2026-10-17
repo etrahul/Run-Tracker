@@ -45,8 +45,18 @@ jobs:
       run: |
         echo "include ':app'" > settings.gradle
         cat << 'EOF' > app/build.gradle
+        buildscript {
+            repositories {
+                google()
+                mavenCentral()
+            }
+        }
         plugins {
             id 'com.android.application'
+        }
+        repositories {
+            google()
+            mavenCentral()
         }
         android {
             namespace 'com.etrahul.openstride'
