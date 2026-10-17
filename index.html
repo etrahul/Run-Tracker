@@ -917,6 +917,34 @@
         }
       }, 1000);
     };
+
+    function speakCoach(msg) {
+      if (!state.voiceCoachEnabled || !('speechSynthesis' in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(msg);
+        
+        // Best natural voice selection from available system voices
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Enhanced'))) || voices.find(v => v.lang.startsWith('en'));
+        
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        }
+
+        utterance.rate = 1.0;  // Normal human speaking speed
+        utterance.pitch = 1.05; // Slightly warm/natural tone pitch
+        
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {}
+    }
+
+    // Ensure voices are loaded properly across browsers/mobile webviews
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
   </script>
 </body>
 </html>
