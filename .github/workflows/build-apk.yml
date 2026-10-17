@@ -86,24 +86,25 @@ jobs:
         EOF
         
         mkdir -p app/src/main/java/com/etrahul/openstride
-        cat << 'EOF' > app/src/main/java/com/etrahul/openstride/MainActivity.kt
-        package com.etrahul.openstride
+        cat << 'EOF' > app/src/main/java/com/etrahul/openstride/MainActivity.java
+        package com.etrahul.openstride;
 
-        import android.os.Bundle
-        import android.webkit.WebView
-        import android.webkit.WebViewClient
-        import androidx.appcompat.app.AppCompatActivity
+        import android.os.Bundle;
+        import android.webkit.WebView;
+        import android.webkit.WebViewClient;
+        import androidx.appcompat.app.AppCompatActivity;
 
-        class MainActivity : AppCompatActivity() {
-            override fun onCreate(savedInstanceState: Bundle?) {
-                super.onCreate(savedInstanceState)
-                val webView = WebView(this)
-                webView.settings.javaScriptEnabled = true
-                webView.settings.domStorageEnabled = true
-                webView.settings.setGeolocationEnabled(true)
-                webView.webViewClient = WebViewClient()
-                webView.loadUrl("file:///android_asset/public/index.html")
-                setContentView(webView)
+        public class MainActivity extends AppCompatActivity {
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                WebView webView = new WebView(this);
+                webView.getSettings().setJavaScriptEnabled(true);
+                webView.getSettings().setDomStorageEnabled(true);
+                webView.getSettings().setGeolocationEnabled(true);
+                webView.setWebViewClient(new WebViewClient());
+                webView.loadUrl("file:///android_asset/public/index.html");
+                setContentView(webView);
             }
         }
         EOF
