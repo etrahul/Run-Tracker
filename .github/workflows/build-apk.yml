@@ -21,7 +21,6 @@ jobs:
 
     - name: Install Android SDK Cleanly
       run: |
-        # Purane saare conflicting paths ko clear karein
         unset ANDROID_SDK_ROOT
         unset ANDROID_HOME
         
@@ -31,7 +30,6 @@ jobs:
         unzip -q tools.zip -d $ANDROID_HOME/cmdline-tools
         mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
         
-        # Sirf ANDROID_HOME set karein
         echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
         echo "PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH" >> $GITHUB_ENV
 
@@ -81,16 +79,50 @@ jobs:
                 versionName "1.0"
             }
         }
+        dependencies {
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+            implementation 'androidx.webkit:webkit:1.8.0'
+        }
         EOF
         
+        mkdir -p app/src/main/java/com/etrahul/openstride
+        cat << 'EOF' > app/src/main/java/com/etrahul/openstride/MainActivity.kt
+        package com.etrahul.openstride
+
+        import android.os.Bundle
+        import android.webkit.WebView
+        import android.webkit.WebViewClient
+        import androidx.appcompat.app.AppCompatActivity
+
+        class MainActivity : AppCompatActivity() {
+            override fun onCreate(savedInstanceState: Bundle?) {
+                super.onCreate(savedInstanceState)
+                val webView = WebView(this)
+                webView.settings.javaScriptEnabled = true
+                webView.settings.domStorageEnabled = true
+                webView.settings.setGeolocationEnabled(true)
+                webView.webViewClient = WebViewClient()
+                webView.loadUrl("file:///android_asset/public/index.html")
+                setContentView(webView)
+            }
+        }
+        EOF
+
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <uses-permission android:name="android.permission.INTERNET" />
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
             <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
-            <application android:allowBackup="true" android:label="OpenStride">
-                <activity android:name=".MainActivity" android:exported="true">
+            
+            <application 
+                android:allowBackup="true" 
+                android:label="OpenStride"
+                android:icon="@android:ic_menu_compass"
+                android:roundIcon="@android:ic_menu_compass">
+                <activity 
+                    android:name=".MainActivity" 
+                    android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
                         <category android:name="android.intent.category.LAUNCHER" />
