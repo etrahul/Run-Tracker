@@ -494,18 +494,19 @@
     }
 
     function openAppSettings() {
-      try {
-        window.location.href = "intent://settings/applications#Intent;scheme=android;end;";
-      } catch (e) {
-        showToast('Please open phone Settings → Apps manually', 'amber');
+      if (window.AndroidBridge && window.AndroidBridge.openAppSettings) {
+        window.AndroidBridge.openAppSettings();
+      } else {
+        showToast('Please open phone Settings → Apps → OpenStride → Permissions', 'amber');
       }
     }
 
     function closeAppNow() {
-      try {
+      if (window.AndroidBridge && window.AndroidBridge.closeApp) {
+        window.AndroidBridge.closeApp();
+      } else {
         window.close();
-      } catch(e) {}
-      document.body.innerHTML = '<div style="background:#090d16;color:#fff;height:100vh;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:20px;"><h2>App Closed. You can now reopen OpenStride from your app drawer after enabling location.</h2></div>';
+      }
     }
 
     function startGpsWatch() {
@@ -956,67 +957,75 @@
     function clearAllHistory() {
       state.history = []; saveHistoryToStorage(); renderHistory(); showToast('History cleared!', 'rose');
     }
-
+    
     function exportWorkoutHistory() {
       const historyData = localStorage.getItem('openstride_real_history_v2') || '[]';
-      const blob = new Blob([historyData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `openstride_athlete_backup_${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
-      showToast('Athlete backup exported successfully!', 'emerald');
-      speakCoach("Backup exported successfully.");
+      const fileName = `openstride_backup_${new Date().toISOString().slice(0,10)}.json`;
+      if (window.AndroidBridge && window.AndroidBridge.saveBackupFile) {
+        window.AndroidBridge.saveBackupFile(historyData, fileName);
+        showToast('Saved to Downloads folder!', 'emerald');
+        speakCoach("Backup saved to Downloads folder.");
+      } else {
+        const blob = new Blob([historyData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        showToast('Backup exported successfully!', 'emerald');
+      }
     }
 
-    function importWorkoutHistory(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      document.getElementById('selectedFileName').textContent = file.name;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const parsed = JSON.parse(e.target.result);
-          if (Array.isArray(parsed)) {
-            state.history = parsed;
-            saveHistoryToStorage();
-            showToast('Athlete logs restored successfully!', 'emerald');
-            setTimeout(() => location.reload(), 1500);
+    function checkPermissionAndProceed() {
+      // Check Android native permission first if running inside APK
+      if (window.AndroidBridge && window.AndroidBridge.hasLocationPermission) {
+        if (!window.AndroidBridge.hasLocationPermission()) {
+          document.getElementById('permissionModal').classList.remove('hidden');
+          const badge = document.getElementById('gpsStatusBadge');
+          if (badge) { badge.textContent = 'Permission Required'; badge.className = 'text-rose-400 font-bold'; }
+          return;
+        } else {
+          document.getElementById('permissionModal').classList.add('hidden');
+        }
+      }
+
+      if (!navigator.geolocation) {
+        showToast('Geolocation not supported', 'rose');
+        return;
+      }
+
+      const badge = document.getElementById('gpsStatusBadge');
+      const btn = document.getElementById('btnToggleGps');
+      if (badge) { badge.textContent = 'Searching Satellite...'; badge.className = 'text-amber-400 font-bold'; }
+      if (btn) { btn.textContent = '⏳ Connecting GPS...'; }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          document.getElementById('permissionModal').classList.add('hidden');
+          state.baseLat = pos.coords.latitude;
+          state.baseLng = pos.coords.longitude;
+          state.lat = pos.coords.latitude;
+          state.lng = pos.coords.longitude;
+          state.acc = pos.coords.accuracy || 5;
+          state.pts = [{ x: 0, y: 0, lat: state.lat, lng: state.lng }];
+          startGpsWatch();
+          drawMap();
+          showToast('Real GPS Locked Successfully!', 'emerald');
+        },
+        (err) => {
+          if (err.code === 1) {
+            // Code 1 = PERMISSION_DENIED
+            document.getElementById('permissionModal').classList.remove('hidden');
+            if (badge) { badge.textContent = 'Permission Denied'; badge.className = 'text-rose-400 font-bold'; }
           } else {
-            alert('Invalid backup format!');
+            // Permission allowed hai par satellite signal weak hai -> Modal band rakho aur watch chalu karo
+            document.getElementById('permissionModal').classList.add('hidden');
+            startGpsWatch();
           }
-        } catch (err) {
-          alert('Invalid backup file!');
-        }
-      };
-      reader.readAsText(file);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
     }
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
-      });
-    }
-
-    window.onload = () => {
-      loadFromStorage();
-      initMapDrag();
-      updateTrackerUI();
-      updatePedometerUI();
-      renderHistory();
-      drawMap();
-      
-      // Strict check right on load
-      checkPermissionAndProceed();
-
-      setInterval(() => {
-        if (state.pedoActive) {
-          state.pedoElapsedSec++;
-          updatePedometerUI();
-          saveDailySteps();
-        }
-      }, 1000);
-    };
   </script>
 </body>
 </html>
