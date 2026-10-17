@@ -21,19 +21,44 @@
 
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4"></div>
 
+  <!-- NATIVE-STYLE PERMISSION SETTINGS POPUP -->
+  <div id="permissionModal" class="fixed inset-0 z-50 hidden bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl max-w-sm w-full p-6 space-y-4 border border-emerald-500/50 shadow-2xl text-center">
+      <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-2xl mx-auto">⚙️</div>
+      <div>
+        <h3 class="text-base font-extrabold text-white">Location Access Required</h3>
+        <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+          OpenStride needs your location to track live runs. Please open your phone settings and turn on Location permission for this app.
+        </p>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-left text-[11px] text-slate-400 space-y-1">
+        <p class="font-bold text-slate-200">Steps to enable:</p>
+        <p>1. Go to phone <strong>Settings</strong></p>
+        <p>2. Tap <strong>Apps</strong> → <strong>OpenStride</strong></p>
+        <p>3. Tap <strong>Permissions</strong> → <strong>Location</strong></p>
+        <p>4. Select <strong>Allow only while using the app</strong></p>
+      </div>
+      <div class="space-y-2 pt-1">
+        <button type="button" onclick="checkPermissionAndProceed()" class="w-full py-3 rounded-xl font-extrabold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg">
+          ✓ I've Enabled It (Retry)
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- User Name Setup Modal -->
   <div id="nameModal" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="glass-card rounded-2xl max-w-sm w-full p-6 space-y-4 border border-emerald-500/40 shadow-2xl">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-lg">👤</div>
         <div>
-          <h3 class="text-base font-extrabold text-white">Runner Profile Setup</h3>
+          <h3 class="text-base font-extrabold text-white">Athlete Profile Setup</h3>
           <p class="text-xs text-slate-400">Make History</p>
         </div>
       </div>
       <div>
         <label for="runnerNameInput" class="block text-xs text-slate-300 mb-1.5 font-medium">Enter Your Name:</label>
-        <input id="runnerNameInput" type="text" placeholder="e.g. Rahul Yadav" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none" />
+        <input id="runnerNameInput" type="text" placeholder="e.g. Rahul Kumar" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none" />
       </div>
       <button type="button" onclick="saveRunnerName()" class="w-full py-2.5 rounded-xl font-extrabold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg">
         Save &amp; Continue →
@@ -48,12 +73,12 @@
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-lg">ℹ️</div>
         <div>
-          <h3 class="text-base font-extrabold text-white">About OpenStride</h3>
-          <p class="text-xs text-slate-400">Version 2.0 • Offline PWA Ready</p>
+          <h3 class="text-base font-extrabold text-white">About OpenStride Pro</h3>
+          <p class="text-xs text-slate-400">Version 2.7 • Pro Athlete Edition</p>
         </div>
       </div>
       <p class="text-xs text-slate-300 leading-relaxed">
-        <strong>OpenStride</strong> is an advanced, self-contained real-time GPS running tracker, offline pedometer and local energy recovery system with voice coaching.
+        <strong>OpenStride</strong> is an elite real-time GPS running tracker, offline pedometer and AI voice coaching system engineered for professional athletes.
       </p>
       <div class="flex flex-wrap items-center gap-2 pt-1">
         <a href="https://github.com/etrahul" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-700 transition">🐙 GitHub</a>
@@ -73,8 +98,8 @@
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-lg">💾</div>
         <div>
-          <h3 class="text-base font-extrabold text-white">Data Backup &amp; Restore</h3>
-          <p class="text-xs text-slate-400">Export or import your local history</p>
+          <h3 class="text-base font-extrabold text-white">Cloud Sync &amp; Backup</h3>
+          <p class="text-xs text-slate-400">Export or import your athlete logs</p>
         </div>
       </div>
       <div class="space-y-3 pt-2">
@@ -96,8 +121,8 @@
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-lg">⚙️</div>
         <div>
-          <h3 class="text-sm font-extrabold text-white">Navigation Menu</h3>
-          <p class="text-[11px] text-slate-400">OpenStride Control Center</p>
+          <h3 class="text-sm font-extrabold text-white">Pro Control Center</h3>
+          <p class="text-[11px] text-slate-400">OpenStride Athletes</p>
         </div>
       </div>
       <button type="button" onclick="closeNavDrawer()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center font-bold">✕</button>
@@ -105,33 +130,37 @@
 
     <div class="flex-1 overflow-y-auto p-5 space-y-4">
       <div class="space-y-1">
-        <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 mb-1">App Tabs</p>
+        <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 mb-1">App Navigation</p>
         <button type="button" onclick="switchTab('tracker'); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center gap-3">📍 Live Tracker</button>
-        <button type="button" onclick="switchTab('steps'); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center gap-3">👟 Step Counter</button>
-        <button type="button" onclick="switchTab('history'); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center gap-3">📊 My History</button>
+        <button type="button" onclick="switchTab('steps'); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center gap-3">👟 Pedometer</button>
+        <button type="button" onclick="switchTab('history'); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center gap-3">📊 Performance History</button>
       </div>
 
       <div class="border-t border-slate-800/80 pt-3 space-y-1">
-        <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 mb-1">Preferences & Tools</p>
+        <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 mb-1">Pro Preferences</p>
         <button type="button" onclick="toggleDistanceUnit();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center justify-between">
-          <span>🔄 Switch Unit</span>
+          <span>🔄 Distance Unit</span>
           <span id="drawerUnitLabel" class="text-emerald-400 font-bold">KM</span>
         </button>
         <button type="button" onclick="toggleVoiceCoach();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center justify-between">
-          <span>🗣️ Voice Coach</span>
+          <span>🗣️ AI Voice Coach</span>
           <span id="drawerVoiceLabel" class="text-emerald-400 font-bold">ON</span>
         </button>
-        <button type="button" onclick="openBackupModal(); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-emerald-400 hover:bg-slate-800/80 flex items-center gap-3">💾 Backup &amp; Restore</button>
+        <button type="button" onclick="cycleMapTheme();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center justify-between">
+          <span>🎨 Map Theme</span>
+          <span id="drawerThemeLabel" class="text-emerald-400 font-bold">Neon Cyber</span>
+        </button>
+        <button type="button" onclick="openBackupModal(); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-emerald-400 hover:bg-slate-800/80 flex items-center gap-3">💾 Cloud Backup &amp; Sync</button>
         <button type="button" onclick="openAboutModal(); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center gap-3">ℹ️ About App</button>
       </div>
     </div>
 
     <div class="p-4 border-t border-slate-800/80 text-center text-[11px] text-slate-500">
-      OpenStride v2.0 • Offline Ready
+      OpenStride Pro v2.7 • Athlete Edition
     </div>
   </div>
 
-  <!-- FIXED RESPONSIVE HEADER (ALWAYS TOP RIGHT BUTTON) -->
+  <!-- FIXED RESPONSIVE HEADER -->
   <header class="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
     <div class="max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between flex-nowrap gap-2">
       <div class="flex items-center gap-2.5 min-w-0">
@@ -142,18 +171,18 @@
           <div class="flex items-center gap-2 flex-wrap">
             <h1 class="text-base sm:text-lg font-extrabold text-white truncate">OpenStride</h1>
             <button type="button" onclick="openNameModal()" class="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400 truncate max-w-[130px]">
-              👤 <span id="headerRunnerName">Enter Name</span> ✎
+              👤 <span id="headerRunnerName">Athlete</span> ✎
             </button>
           </div>
-          <p class="text-[11px] sm:text-xs text-slate-400 truncate">GPS-RUN Tracker, Pedometer &amp; History</p>
+          <p class="text-[11px] sm:text-xs text-slate-400 truncate">Pro GPS Tracker &amp; AI Voice Coach</p>
         </div>
       </div>
 
       <div class="flex items-center gap-2 shrink-0">
         <nav class="hidden sm:flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
           <button id="tabBtnTracker" type="button" onclick="switchTab('tracker')" class="px-3 py-1.5 rounded-lg text-sm font-bold transition-all bg-emerald-500 text-slate-950 shadow">Live Tracker</button>
-          <button id="tabBtnSteps" type="button" onclick="switchTab('steps')" class="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-300 hover:text-white">Step Counter</button>
-          <button id="tabBtnHistory" type="button" onclick="switchTab('history')" class="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-300 hover:text-white">My History</button>
+          <button id="tabBtnSteps" type="button" onclick="switchTab('steps')" class="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-300 hover:text-white">Pedometer</button>
+          <button id="tabBtnHistory" type="button" onclick="switchTab('history')" class="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-300 hover:text-white">History</button>
         </nav>
 
         <div class="hidden sm:flex items-center gap-2">
@@ -162,7 +191,6 @@
           </button>
         </div>
 
-        <!-- Top Right Corner Menu Button -->
         <button type="button" onclick="openNavDrawer()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-900 border border-slate-700 text-white flex items-center justify-center font-bold text-base sm:text-lg hover:bg-slate-800 transition shadow-lg shrink-0">
           ☰
         </button>
@@ -243,7 +271,7 @@
                 <h2 class="text-sm font-bold text-white">Real-Time Route Map</h2>
               </div>
               <button id="btnToggleGps" type="button" onclick="toggleGpsMode()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                📡 Connect Real GPS
+                📡 Connect GPS
               </button>
             </div>
 
@@ -268,12 +296,12 @@
       </div>
     </div>
 
-    <!-- TAB 2: STEP COUNTER (AUTO RUNNING) -->
+    <!-- TAB 2: STEP COUNTER -->
     <div id="tabPanelSteps" class="hidden space-y-6">
       <div class="max-w-2xl mx-auto glass-card rounded-2xl p-6 space-y-6 border-t-4 border-t-sky-500">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
           <div>
-            <span class="text-xs font-extrabold uppercase tracking-wider text-sky-400">👟 Auto Background Pedometer</span>
+            <span class="text-xs font-extrabold uppercase tracking-wider text-sky-400">👟 Pro Auto Pedometer</span>
             <h2 class="text-xl font-extrabold text-white mt-0.5">Standalone Step Counter</h2>
           </div>
           <span id="pedoStatusBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Active</span>
@@ -331,8 +359,8 @@
       <div class="glass-card rounded-2xl p-5 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
           <div>
-            <h2 class="text-base font-bold text-white"><span id="historyTitleName">Runner</span>'s Saved Activity History</h2>
-            <p class="text-xs text-slate-400">Stored locally on your device</p>
+            <h2 class="text-base font-bold text-white"><span id="historyTitleName">Athlete</span>'s Performance Logs</h2>
+            <p class="text-xs text-slate-400">Cloud synced &amp; stored locally</p>
           </div>
           <button type="button" onclick="clearAllHistory()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-rose-950 text-slate-400 border border-slate-800">
             🗑 Clear History
@@ -344,7 +372,7 @@
             <thead>
               <tr class="border-b border-slate-800 text-slate-400 uppercase text-[11px]">
                 <th class="py-2.5 px-2">Date &amp; Time</th>
-                <th class="py-2.5 px-2">User / Mode</th>
+                <th class="py-2.5 px-2">Athlete / Mode</th>
                 <th class="py-2.5 px-2 text-right">Distance</th>
                 <th class="py-2.5 px-2 text-right">Duration</th>
                 <th class="py-2.5 px-2 text-right">Steps</th>
@@ -367,13 +395,19 @@
       high: { threshold: 4.6, minGapMs: 550, peakHoldMs: 150 } 
     };
 
+    const MAP_THEMES = {
+      neon: { bg: '#070b14', grid: 'rgba(30, 41, 59, 0.65)', line: '#10b981', start: '#10b981', end: '#38bdf8' },
+      midnight: { bg: '#020617', grid: 'rgba(51, 65, 85, 0.35)', line: '#38bdf8', start: '#38bdf8', end: '#f43f5e' },
+      cyberpunk: { bg: '#18021a', grid: 'rgba(168, 85, 247, 0.25)', line: '#d946ef', start: '#d946ef', end: '#eab308' }
+    };
+
     const state = {
       runnerName: '', unit: 'km', mode: 'stopwatch', intensity: 'moderate', targetMs: 20 * 60 * 1000,
       running: false, elapsedMs: 0, lastTick: 0, timerId: null, distKm: 0, runSteps: 0, cals: 0,
-      useRealGps: false, gpsWatchId: null, baseLat: null, baseLng: null, lat: null, lng: null, acc: 0,
-      pts: [], mapZoom: 1.0, mapPanX: 0, mapPanY: 0,
+      useRealGps: true, gpsWatchId: null, baseLat: 23.8345, baseLng: 87.2750, lat: 23.8345, lng: 87.2750, acc: 5.0,
+      pts: [{ x: 0, y: 0, lat: 23.8345, lng: 87.2750 }], mapZoom: 1.0, mapPanX: 0, mapPanY: 0, mapThemeKey: 'neon',
       pedoActive: true, pedoSteps: 0, pedoElapsedSec: 0, pedoTimerId: null, stepSensitivity: 'strict',
-      pedoGoal: 6000, voiceCoachEnabled: true,
+      pedoGoal: 6000, voiceCoachEnabled: true, lastAnnouncedKm: 0,
       gravX: 0, gravY: 0, gravZ: 0, lastStepTimestamp: 0, stepPeakArmed: true, history: []
     };
 
@@ -400,6 +434,12 @@
           updateVoiceLabel();
         }
 
+        const savedTheme = localStorage.getItem('os_map_theme');
+        if (savedTheme && MAP_THEMES[savedTheme]) {
+          state.mapThemeKey = savedTheme;
+          updateThemeLabel();
+        }
+
         const daily = JSON.parse(localStorage.getItem('os_daily_steps') || '{}');
         const today = getTodayKey();
         if (daily.date === today) {
@@ -407,13 +447,35 @@
           state.pedoElapsedSec = daily.sec || 0;
         } else if (daily.date && daily.steps > 0) {
           state.history.unshift({
-            date: daily.date + ' • Full Day', user: state.runnerName || 'Runner', mode: 'Auto Daily Steps',
+            date: daily.date + ' • Full Day', user: state.runnerName || 'Athlete', mode: 'Auto Daily Steps',
             distKm: ((daily.steps * 0.74)/1000).toFixed(2), sec: daily.sec || 0, steps: daily.steps, cals: Math.round(daily.steps * 0.045)
           });
           saveHistoryToStorage();
           localStorage.setItem('os_daily_steps', JSON.stringify({ date: today, steps: 0, sec: 0 }));
         }
       } catch (e) {}
+    }
+
+    function checkPermissionAndProceed() {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          document.getElementById('permissionModal').classList.add('hidden');
+          state.baseLat = pos.coords.latitude;
+          state.baseLng = pos.coords.longitude;
+          state.lat = pos.coords.latitude;
+          state.lng = pos.coords.longitude;
+          state.acc = pos.coords.accuracy || 5;
+          state.pts = [{ x: 0, y: 0, lat: state.lat, lng: state.lng }];
+          startGpsWatch();
+          drawMap();
+          showToast('Location permission active!', 'emerald');
+        },
+        (err) => {
+          document.getElementById('permissionModal').classList.remove('hidden');
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      );
     }
 
     function saveDailySteps() {
@@ -429,17 +491,17 @@
 
     function saveRunnerName() {
       const input = document.getElementById('runnerNameInput').value.trim();
-      state.runnerName = input || 'Runner';
+      state.runnerName = input || 'Athlete';
       try { localStorage.setItem('openstride_user_name', state.runnerName); } catch (e) {}
       updateNameDisplays();
       document.getElementById('nameModal').classList.add('hidden');
       showToast(`Welcome, ${state.runnerName}!`, 'emerald');
-      speakCoach(`Welcome ${state.runnerName}. Let's get moving!`);
+      speakCoach(`Welcome athlete ${state.runnerName}. Let's crush your goals today!`);
     }
 
     function updateNameDisplays() {
-      document.getElementById('headerRunnerName').textContent = state.runnerName || 'Runner';
-      document.getElementById('historyTitleName').textContent = state.runnerName || 'Runner';
+      document.getElementById('headerRunnerName').textContent = state.runnerName || 'Athlete';
+      document.getElementById('historyTitleName').textContent = state.runnerName || 'Athlete';
     }
 
     function saveHistoryToStorage() {
@@ -474,25 +536,16 @@
       }
     }
 
-    function openAboutModal() {
-      document.getElementById('aboutModal').classList.remove('hidden');
-    }
-    function closeAboutModal() {
-      document.getElementById('aboutModal').classList.add('hidden');
-    }
-
-    function openBackupModal() {
-      document.getElementById('backupModal').classList.remove('hidden');
-    }
-    function closeBackupModal() {
-      document.getElementById('backupModal').classList.add('hidden');
-    }
+    function openAboutModal() { document.getElementById('aboutModal').classList.remove('hidden'); }
+    function closeAboutModal() { document.getElementById('aboutModal').classList.add('hidden'); }
+    function openBackupModal() { document.getElementById('backupModal').classList.remove('hidden'); }
+    function closeBackupModal() { document.getElementById('backupModal').classList.add('hidden'); }
 
     function toggleVoiceCoach() {
       state.voiceCoachEnabled = !state.voiceCoachEnabled;
       localStorage.setItem('os_voice_coach', state.voiceCoachEnabled);
       updateVoiceLabel();
-      showToast(`Voice Coach: ${state.voiceCoachEnabled ? 'ON' : 'OFF'}`, 'sky');
+      showToast(`AI Voice Coach: ${state.voiceCoachEnabled ? 'ON' : 'OFF'}`, 'sky');
       if (state.voiceCoachEnabled) speakCoach("Voice coach activated.");
     }
 
@@ -504,15 +557,39 @@
       }
     }
 
+    function cycleMapTheme() {
+      const keys = Object.keys(MAP_THEMES);
+      const nextIdx = (keys.indexOf(state.mapThemeKey) + 1) % keys.length;
+      state.mapThemeKey = keys[nextIdx];
+      localStorage.setItem('os_map_theme', state.mapThemeKey);
+      updateThemeLabel();
+      drawMap();
+      showToast(`Map Theme: ${state.mapThemeKey.toUpperCase()}`, 'sky');
+    }
+
+    function updateThemeLabel() {
+      const lbl = document.getElementById('drawerThemeLabel');
+      if (lbl) {
+        lbl.textContent = state.mapThemeKey.charAt(0).toUpperCase() + state.mapThemeKey.slice(1);
+      }
+    }
+
     function speakCoach(msg) {
       if (!state.voiceCoachEnabled || !('speechSynthesis' in window)) return;
       try {
         window.speechSynthesis.cancel();
+        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
         const utterance = new SpeechSynthesisUtterance(msg);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
+        utterance.rate = 1.0; utterance.pitch = 1.05;
+        const voices = window.speechSynthesis.getVoices();
+        const voice = voices.find(v => v.lang.includes('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Microsoft'))) || voices.find(v => v.lang.startsWith('en'));
+        if (voice) utterance.voice = voice;
         window.speechSynthesis.speak(utterance);
       } catch (err) {}
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
 
     function switchTab(tab) {
@@ -570,9 +647,7 @@
       const filter = STEP_FILTERS[state.stepSensitivity] || STEP_FILTERS.strict;
       const now = Date.now();
 
-      if (gForceMag < (filter.threshold * 0.4)) {
-        state.stepPeakArmed = true;
-      }
+      if (gForceMag < (filter.threshold * 0.4)) state.stepPeakArmed = true;
 
       if (state.stepPeakArmed && gForceMag >= filter.threshold && (now - state.lastStepTimestamp) >= filter.minGapMs) {
         state.stepPeakArmed = false;
@@ -597,9 +672,7 @@
       const pctEl = document.getElementById('pedoGoalPct');
       if (pctEl) pctEl.textContent = `${pct}%`;
       const goalInput = document.getElementById('pedoGoalInput');
-      if (goalInput && document.activeElement !== goalInput) {
-        goalInput.value = state.pedoGoal;
-      }
+      if (goalInput && document.activeElement !== goalInput) goalInput.value = state.pedoGoal;
 
       const distKm = (state.pedoSteps * 0.74) / 1000;
       const dispDist = state.unit === 'km' ? distKm : distKm * 0.621371;
@@ -615,7 +688,7 @@
       if (state.pedoSteps === 0) return showToast('No steps to save yet!', 'amber');
       state.history.unshift({
         date: new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
-        user: state.runnerName || 'Runner', mode: 'Auto Pedometer',
+        user: state.runnerName || 'Athlete', mode: 'Auto Pedometer',
         distKm: ((state.pedoSteps * 0.74) / 1000).toFixed(2), sec: state.pedoElapsedSec,
         steps: state.pedoSteps, cals: Math.round(state.pedoSteps * 0.045)
       });
@@ -631,64 +704,43 @@
     }
 
     function toggleGpsMode() {
-      const btn = document.getElementById('btnToggleGps'), status = document.getElementById('gpsStatusBadge');
-      if (!state.useRealGps) {
-        state.useRealGps = true;
-        btn.textContent = '🟢 GPS Connected';
-        status.textContent = 'Live GPS Active'; 
-        status.className = 'text-emerald-400 font-bold';
-
-        // Default starting point fallback if hardware geolocation hangs in APK wrapper
-        state.baseLat = 23.8345; 
-        state.baseLng = 87.2750;
-        state.lat = 23.8345; 
-        state.lng = 87.2750;
-        state.acc = 5.0;
-        state.pts = [{ x: 0, y: 0, lat: state.lat, lng: state.lng }];
-
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              state.baseLat = pos.coords.latitude; 
-              state.baseLng = pos.coords.longitude;
-              state.lat = pos.coords.latitude; 
-              state.lng = pos.coords.longitude;
-              state.acc = pos.coords.accuracy || 5;
-              state.pts = [{ x: 0, y: 0, lat: state.lat, lng: state.lng }];
-              startGpsWatch();
-            },
-            (err) => {
-              startGpsWatch();
-            },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-          );
-        }
-
-        drawMap(); 
-        showToast('GPS connected!', 'emerald');
-        speakCoach("GPS connected and active.");
-      }
+      checkPermissionAndProceed();
     }
-    
+
     function startGpsWatch() {
+      const btn = document.getElementById('btnToggleGps'), status = document.getElementById('gpsStatusBadge');
+      state.useRealGps = true;
+      btn.textContent = '🟢 GPS Active';
+      status.textContent = 'Live GPS Active'; 
+      status.className = 'text-emerald-400 font-bold';
+
       if (state.gpsWatchId) navigator.geolocation.clearWatch(state.gpsWatchId);
       state.gpsWatchId = navigator.geolocation.watchPosition(
         (pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
           state.acc = accuracy || 5;
           if (state.baseLat === null) { state.baseLat = latitude; state.baseLng = longitude; }
-          if (state.running && state.acc <= 20) {
+          if (state.running && state.acc <= 30) {
             const stepKm = haversine(state.lat, state.lng, latitude, longitude);
-            if (stepKm >= 0.003 && stepKm < 0.5) {
+            if (stepKm >= 0.002 && stepKm < 0.5) {
               state.distKm += stepKm;
               const xM = (longitude - state.baseLng) * 111320 * Math.cos(state.baseLat * Math.PI / 180);
               const yM = -(latitude - state.baseLat) * 110540;
               state.pts.push({ x: xM, y: yM, lat: latitude, lng: longitude });
+
+              const currentFloorKm = Math.floor(state.distKm);
+              if (currentFloorKm > state.lastAnnouncedKm) {
+                state.lastAnnouncedKm = currentFloorKm;
+                speakCoach(`Milestone reached! ${currentFloorKm} kilometers completed. Keep pushing!`);
+              }
             }
           }
           state.lat = latitude; state.lng = longitude; drawMap();
         },
-        () => {}, { enableHighAccuracy: true, maximumAge: 1000, timeout: 8000 }
+        () => {
+          document.getElementById('permissionModal').classList.remove('hidden');
+        }, 
+        { enableHighAccuracy: true, maximumAge: 1000, timeout: 8000 }
       );
     }
 
@@ -707,9 +759,7 @@
         zoomEl.textContent = `Zoom: ${state.mapZoom}x`;
         zoomEl.classList.remove('opacity-0');
         if (zoomTimeout) clearTimeout(zoomTimeout);
-        zoomTimeout = setTimeout(() => {
-          zoomEl.classList.add('opacity-0');
-        }, 1500);
+        zoomTimeout = setTimeout(() => zoomEl.classList.add('opacity-0'), 1500);
       }
       drawMap();
     }
@@ -717,10 +767,7 @@
     function resetMapView() {
       state.mapZoom = 1.0; state.mapPanX = 0; state.mapPanY = 0;
       const zoomEl = document.getElementById('zoomLevelText');
-      if (zoomEl) {
-        zoomEl.textContent = `Zoom: 1.0x`;
-        zoomEl.classList.add('opacity-0');
-      }
+      if (zoomEl) zoomEl.classList.add('opacity-0');
       drawMap();
     }
 
@@ -747,23 +794,24 @@
       const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
       const w = rect.width, h = rect.height, cx = w / 2 + state.mapPanX, cy = h / 2 + state.mapPanY, scale = 2.2 * state.mapZoom;
 
-      ctx.fillStyle = '#070b14'; ctx.fillRect(0, 0, w, h);
+      const theme = MAP_THEMES[state.mapThemeKey] || MAP_THEMES.neon;
+      ctx.fillStyle = theme.bg; ctx.fillRect(0, 0, w, h);
       const gridStep = Math.max(18, 36 * state.mapZoom);
-      ctx.strokeStyle = 'rgba(30, 41, 59, 0.65)'; ctx.lineWidth = 1;
+      ctx.strokeStyle = theme.grid; ctx.lineWidth = 1;
       for (let x = (cx % gridStep + gridStep) % gridStep; x < w; x += gridStep) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
       for (let y = (cy % gridStep + gridStep) % gridStep; y < h; y += gridStep) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
 
       if (state.pts.length > 1) {
-        ctx.strokeStyle = '#10b981'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+        ctx.strokeStyle = theme.line; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
         state.pts.forEach((p, i) => { const px = cx + p.x * scale, py = cy + p.y * scale; if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); });
         ctx.stroke();
       }
       if (state.pts.length > 0) {
         const first = state.pts[0], last = state.pts[state.pts.length - 1];
-        ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(cx + first.x * scale, cy + first.y * scale, 6, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(cx + last.x * scale, cy + last.y * scale, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = theme.start; ctx.beginPath(); ctx.arc(cx + first.x * scale, cy + first.y * scale, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = theme.end; ctx.beginPath(); ctx.arc(cx + last.x * scale, cy + last.y * scale, 7, 0, Math.PI * 2); ctx.fill();
       } else {
-        ctx.fillStyle = '#64748b'; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = theme.line; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
       }
       const coordEl = document.getElementById('gpsCoordText');
       if (coordEl && state.lat !== null) coordEl.textContent = `${state.lat.toFixed(5)}°, ${state.lng.toFixed(5)}°`;
@@ -789,13 +837,12 @@
       state.running = !state.running;
       const dot = document.getElementById('runStatusDot'), txt = document.getElementById('runStatusText');
       if (state.running) {
-        if (!state.useRealGps) toggleGpsMode();
         state.lastTick = performance.now();
         state.timerId = setInterval(onRunTick, 100);
         dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping';
         txt.textContent = 'Tracking Real Run';
         document.getElementById('btnStartPauseText').textContent = 'Pause';
-        speakCoach("Workout started. Let's go!");
+        speakCoach("Workout started. Let's crush this run!");
       } else {
         clearInterval(state.timerId);
         dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
@@ -832,19 +879,19 @@
       const finalCals = Math.round(state.cals);
       state.history.unshift({
         date: new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
-        user: state.runnerName || 'Runner', mode: 'GPS Run', distKm: state.distKm.toFixed(2),
+        user: state.runnerName || 'Athlete', mode: 'GPS Run', distKm: state.distKm.toFixed(2),
         sec: Math.round(state.elapsedMs / 1000), steps: state.runSteps, cals: finalCals
       });
       saveHistoryToStorage(); 
       showToast('Run saved!', 'emerald'); 
-      speakCoach(`Workout finished. You covered ${finalDist} ${state.unit} and burned ${finalCals} calories.`);
+      speakCoach(`Workout finished. Excellent effort! You covered ${finalDist} ${state.unit} and burned ${finalCals} calories.`);
       resetRun(); 
       switchTab('history');
     }
 
     function resetRun() {
       clearInterval(state.timerId);
-      state.running = false; state.elapsedMs = 0; state.distKm = 0; state.runSteps = 0; state.cals = 0;
+      state.running = false; state.elapsedMs = 0; state.distKm = 0; state.runSteps = 0; state.cals = 0; state.lastAnnouncedKm = 0;
       state.pts = state.lat ? [{ x: 0, y: 0, lat: state.lat, lng: state.lng }] : [];
       document.getElementById('btnStartPauseText').textContent = 'Start Run';
       document.getElementById('runStatusDot').className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
@@ -857,7 +904,7 @@
       const tb = document.getElementById('historyTableBody');
       if (!tb) return;
       if (state.history.length === 0) {
-        tb.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500 font-sans">No saved history yet.</td></tr>`;
+        tb.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500 font-sans">No performance logs recorded yet.</td></tr>`;
         return;
       }
       tb.innerHTML = state.history.map(r => {
@@ -883,9 +930,9 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `openstride_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.download = `openstride_athlete_backup_${new Date().toISOString().slice(0,10)}.json`;
       a.click();
-      showToast('Backup exported successfully!', 'emerald');
+      showToast('Athlete backup exported successfully!', 'emerald');
       speakCoach("Backup exported successfully.");
     }
 
@@ -899,7 +946,7 @@
           if (Array.isArray(parsed)) {
             state.history = parsed;
             saveHistoryToStorage();
-            alert('Workout history restored successfully! Refreshing app...');
+            alert('Athlete logs restored successfully! Refreshing app...');
             location.reload();
           } else {
             alert('Invalid backup format!');
@@ -913,9 +960,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker registered!'))
-          .catch(err => console.log('Service Worker failed: ', err));
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
       });
     }
 
@@ -926,6 +971,8 @@
       updatePedometerUI();
       renderHistory();
       drawMap();
+      
+      checkPermissionAndProceed();
 
       setInterval(() => {
         if (state.pedoActive) {
@@ -935,34 +982,6 @@
         }
       }, 1000);
     };
-
-    function speakCoach(msg) {
-      if (!state.voiceCoachEnabled || !('speechSynthesis' in window)) return;
-      try {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(msg);
-        
-        // Best natural voice selection from available system voices
-        const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Enhanced'))) || voices.find(v => v.lang.startsWith('en'));
-        
-        if (preferredVoice) {
-          utterance.voice = preferredVoice;
-        }
-
-        utterance.rate = 1.0;  // Normal human speaking speed
-        utterance.pitch = 1.05; // Slightly warm/natural tone pitch
-        
-        window.speechSynthesis.speak(utterance);
-      } catch (err) {}
-    }
-
-    // Ensure voices are loaded properly across browsers/mobile webviews
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-      };
-    }
   </script>
 </body>
 </html>
