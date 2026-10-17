@@ -103,6 +103,9 @@ jobs:
                 webView.getSettings().setJavaScriptEnabled(true);
                 webView.getSettings().setDomStorageEnabled(true);
                 webView.getSettings().setGeolocationEnabled(true);
+                webView.getSettings().setLoadWithOverviewMode(true);
+                webView.getSettings().setUseWideViewPort(true);
+                webView.clearCache(true);
                 webView.setWebViewClient(new WebViewClient());
                 webView.loadUrl("file:///android_asset/public/index.html");
                 setContentView(webView);
