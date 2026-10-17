@@ -21,25 +21,30 @@
 
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4"></div>
 
-  <!-- STRICT PERMISSION GUARD MODAL -->
+  <!-- STRICT PERMISSION & REAL GPS LOCK MODAL -->
   <div id="permissionModal" class="fixed inset-0 z-50 hidden bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
     <div class="glass-card rounded-2xl max-w-sm w-full p-6 space-y-4 border border-rose-500/50 shadow-2xl text-center">
       <div class="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-2xl mx-auto">📍</div>
       <div>
         <h3 class="text-base font-extrabold text-white">Location Permission Required</h3>
         <p class="text-xs text-slate-300 mt-2 leading-relaxed">
-          OpenStride cannot start tracking without Location permission. Please enable it in your phone settings.
+          OpenStride cannot track runs without real GPS location permission enabled.
         </p>
       </div>
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-left text-[11px] text-slate-400 space-y-1">
-        <p class="font-bold text-slate-200">How to fix:</p>
-        <p>1. Go to phone <strong>Settings</strong> → <strong>Apps</strong></p>
-        <p>2. Tap <strong>OpenStride</strong> → <strong>Permissions</strong></p>
-        <p>3. Tap <strong>Location</strong> → Set to <strong>Allow only while using the app</strong></p>
+        <p class="font-bold text-slate-200">Instructions:</p>
+        <p>1. Tap <strong>Open Settings</strong> below</p>
+        <p>2. Go to <strong>Permissions</strong> → <strong>Location</strong></p>
+        <p>3. Select <strong>Allow only while using the app</strong></p>
       </div>
-      <button type="button" onclick="checkPermissionAndProceed()" class="w-full py-3 rounded-xl font-extrabold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg">
-        ✓ I've Enabled It (Retry)
-      </button>
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button type="button" onclick="openAppSettings()" class="py-2.5 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 transition">
+          ⚙️ Open Settings
+        </button>
+        <button type="button" onclick="closeAppNow()" class="py-2.5 rounded-xl font-bold text-xs bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800 transition">
+          ❌ Close App
+        </button>
+      </div>
     </div>
   </div>
 
@@ -71,7 +76,7 @@
         <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-lg">ℹ️</div>
         <div>
           <h3 class="text-base font-extrabold text-white">About OpenStride Pro</h3>
-          <p class="text-xs text-slate-400">Version 2.9 • Pro Athlete Edition</p>
+          <p class="text-xs text-slate-400">Version 3.0 • Pro Athlete Edition</p>
         </div>
       </div>
       <p class="text-xs text-slate-300 leading-relaxed">
@@ -88,7 +93,7 @@
     </div>
   </div>
 
-  <!-- Backup & Restore Modal (FIXED FILE INPUT) -->
+  <!-- Backup & Restore Modal -->
   <div id="backupModal" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="glass-card rounded-2xl max-w-md w-full p-6 space-y-4 border border-emerald-500/40 shadow-2xl relative">
       <button onclick="closeBackupModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg font-bold">✕</button>
@@ -117,7 +122,7 @@
     </div>
   </div>
 
-  <!-- PROFESSIONAL TRANSPARENT & BLURRED SIDE-OVER DRAWER -->
+  <!-- SIDE DRAWER -->
   <div id="drawerBackdrop" class="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xl hidden transition-opacity opacity-0 duration-300" onclick="closeNavDrawer()"></div>
   <div id="navDrawer" class="fixed top-0 right-0 z-50 h-full w-80 bg-slate-900/90 backdrop-blur-2xl border-l border-slate-800/80 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="p-5 border-b border-slate-800/80 flex items-center justify-between">
@@ -159,11 +164,11 @@
     </div>
 
     <div class="p-4 border-t border-slate-800/80 text-center text-[11px] text-slate-500">
-      OpenStride Pro v2.9 • Athlete Edition
+      OpenStride Pro v3.0 • Athlete Edition
     </div>
   </div>
 
-  <!-- FIXED RESPONSIVE HEADER -->
+  <!-- HEADER -->
   <header class="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
     <div class="max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between flex-nowrap gap-2">
       <div class="flex items-center gap-2.5 min-w-0">
@@ -273,7 +278,7 @@
               <div>
                 <h2 class="text-sm font-bold text-white">Real-Time Route Map</h2>
               </div>
-              <button id="btnToggleGps" type="button" onclick="toggleGpsMode()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              <button id="btnToggleGps" type="button" onclick="checkPermissionAndProceed()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                 📡 Connect GPS
               </button>
             </div>
@@ -281,9 +286,9 @@
             <div class="relative w-full h-80 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
               <canvas id="gpsCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
               <div class="absolute top-3 left-3 bg-slate-950/85 backdrop-blur-md border border-slate-800 rounded-xl px-3 py-1.5 text-[11px] space-y-0.5 pointer-events-none">
-                <div id="gpsStatusBadge" class="text-amber-400 font-bold">Standby</div>
+                <div id="gpsStatusBadge" class="text-amber-400 font-bold">Waiting Lock</div>
                 <div class="text-slate-400">Lat/Lng: <span id="gpsCoordText" class="text-slate-200 mono-num">-- , --</span></div>
-                <div class="text-slate-400">Accuracy: <strong id="gpsAccText" class="text-emerald-400 mono-num">±0 m</strong></div>
+                <div class="text-slate-400">Accuracy: <strong id="gpsAccText" class="text-amber-400 mono-num">Unlocks on GPS</strong></div>
               </div>
               <div class="absolute top-3 right-3 flex flex-col gap-1.5">
                 <button type="button" onclick="zoomMap(1.3)" class="w-9 h-9 rounded-xl bg-slate-900/90 text-white font-extrabold border border-slate-700 shadow flex items-center justify-center text-base">+</button>
@@ -407,7 +412,7 @@
     const state = {
       runnerName: '', unit: 'km', mode: 'stopwatch', intensity: 'moderate', targetMs: 20 * 60 * 1000,
       running: false, elapsedMs: 0, lastTick: 0, timerId: null, distKm: 0, runSteps: 0, cals: 0,
-      useRealGps: true, gpsWatchId: null, baseLat: null, baseLng: null, lat: null, lng: null, acc: 0,
+      useRealGps: false, gpsWatchId: null, baseLat: null, baseLng: null, lat: null, lng: null, acc: 0,
       pts: [], mapZoom: 1.0, mapPanX: 0, mapPanY: 0, mapThemeKey: 'neon',
       pedoActive: true, pedoSteps: 0, pedoElapsedSec: 0, pedoTimerId: null, stepSensitivity: 'strict',
       pedoGoal: 6000, voiceCoachEnabled: true, lastAnnouncedKm: 0,
@@ -459,16 +464,15 @@
       } catch (e) {}
     }
 
-    // STRICT PERMISSION CHECKER ON STARTUP
+    // STRICT PERMISSION & REAL GPS CHECK
     function checkPermissionAndProceed() {
       if (!navigator.geolocation) {
-        showToast('Geolocation not supported by device', 'rose');
+        showToast('Geolocation not supported', 'rose');
         return;
       }
       
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          // Permission GRANTED successfully! Hide modal & start GPS.
           document.getElementById('permissionModal').classList.add('hidden');
           state.baseLat = pos.coords.latitude;
           state.baseLng = pos.coords.longitude;
@@ -478,20 +482,30 @@
           state.pts = [{ x: 0, y: 0, lat: state.lat, lng: state.lng }];
           startGpsWatch();
           drawMap();
-          showToast('GPS Connected & Active!', 'emerald');
+          showToast('Real GPS Locked Successfully!', 'emerald');
         },
         (err) => {
-          // Permission DENIED or BLOCKED: Keep modal visible strictly!
           document.getElementById('permissionModal').classList.remove('hidden');
           const badge = document.getElementById('gpsStatusBadge');
-          if (badge) { badge.textContent = 'Permission Required'; badge.className = 'text-rose-400 font-bold'; }
+          if (badge) { badge.textContent = 'Waiting Lock'; badge.className = 'text-rose-400 font-bold'; }
         },
         { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
       );
     }
 
-    function toggleGpsMode() {
-      checkPermissionAndProceed();
+    function openAppSettings() {
+      try {
+        window.location.href = "intent://settings/applications#Intent;scheme=android;end;";
+      } catch (e) {
+        showToast('Please open phone Settings → Apps manually', 'amber');
+      }
+    }
+
+    function closeAppNow() {
+      try {
+        window.close();
+      } catch(e) {}
+      document.body.innerHTML = '<div style="background:#090d16;color:#fff;height:100vh;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:20px;"><h2>App Closed. You can now reopen OpenStride from your app drawer after enabling location.</h2></div>';
     }
 
     function startGpsWatch() {
@@ -828,10 +842,10 @@
       }
       const coordEl = document.getElementById('gpsCoordText');
       if (coordEl && state.lat !== null) coordEl.textContent = `${state.lat.toFixed(5)}°, ${state.lng.toFixed(5)}°`;
-      else if (coordEl) coordEl.textContent = 'Permission Required';
+      else if (coordEl) coordEl.textContent = 'Waiting Lock';
 
       const accEl = document.getElementById('gpsAccText');
-      if (accEl) accEl.textContent = state.lat !== null ? `±${state.acc.toFixed(1)} m` : 'Locked';
+      if (accEl) accEl.textContent = state.lat !== null ? `±${state.acc.toFixed(1)} m` : 'Unlocks on GPS';
     }
 
     function setRunMode(mode) {
@@ -992,7 +1006,7 @@
       renderHistory();
       drawMap();
       
-      // Enforce permission check immediately on startup
+      // Strict check right on load
       checkPermissionAndProceed();
 
       setInterval(() => {
