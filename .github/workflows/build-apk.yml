@@ -37,11 +37,16 @@ jobs:
         yes | sdkmanager --licenses || true
         sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-    - name: Build Web App Package
+    - name: Build Web App Package & Setup Icon
       run: |
         mkdir -p app/src/main/assets/public
+        mkdir -p app/src/main/res/drawable
+        
         cp index.html app/src/main/assets/public/
-        if [ -f icon.png ]; then cp icon.png app/src/main/assets/public/; fi
+        if [ -f icon.png ]; then 
+          cp icon.png app/src/main/assets/public/; 
+          cp icon.png app/src/main/res/drawable/app_icon.png;
+        fi
         if [ -f manifest.json ]; then cp manifest.json app/src/main/assets/public/; fi
 
     - name: Create Clean Gradle Project Files
@@ -115,8 +120,8 @@ jobs:
             <application 
                 android:allowBackup="true" 
                 android:label="OpenStride"
-                android:icon="@android:ic_menu_compass"
-                android:roundIcon="@android:ic_menu_compass">
+                android:icon="@drawable/app_icon"
+                android:roundIcon="@drawable/app_icon">
                 <activity 
                     android:name=".MainActivity" 
                     android:exported="true">
