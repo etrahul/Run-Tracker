@@ -49,11 +49,11 @@
         <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-lg">ℹ️</div>
         <div>
           <h3 class="text-base font-extrabold text-white">About OpenStride</h3>
-          <p class="text-xs text-slate-400">Version 2.0 • Open-Source Software</p>
+          <p class="text-xs text-slate-400">Version 2.0 • Offline PWA Ready</p>
         </div>
       </div>
       <p class="text-xs text-slate-300 leading-relaxed">
-        <strong>OpenStride</strong> is an advanced, self-contained real-time GPS running tracker, offline pedometer and local energy recovery system.
+        <strong>OpenStride</strong> is an advanced, self-contained real-time GPS running tracker, offline pedometer and local energy recovery system with voice coaching.
       </p>
       <div class="flex flex-wrap items-center gap-2 pt-1">
         <a href="https://github.com/etrahul" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-700 transition">🐙 GitHub</a>
@@ -89,6 +89,48 @@
     </div>
   </div>
 
+  <!-- PROFESSIONAL SIDE-OVER NAVIGATION DRAWER WITH BACKGROUND BLUR -->
+  <div id="drawerBackdrop" class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md hidden transition-opacity opacity-0 duration-300" onclick="closeNavDrawer()"></div>
+  <div id="navDrawer" class="fixed top-0 right-0 z-50 h-full w-80 bg-slate-900 border-l border-slate-800 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-lg">⚙️</div>
+        <div>
+          <h3 class="text-sm font-extrabold text-white">Navigation Menu</h3>
+          <p class="text-[11px] text-slate-400">OpenStride Control Center</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeNavDrawer()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center font-bold">✕</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-5 space-y-4">
+      <div class="space-y-1">
+        <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 mb-1">App Tabs</p>
+        <button type="button" onclick="switchTab('tracker'); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center gap-3">📍 Live Tracker</button>
+        <button type="button" onclick="switchTab('steps'); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center gap-3">👟 Step Counter</button>
+        <button type="button" onclick="switchTab('history'); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center gap-3">📊 My History</button>
+      </div>
+
+      <div class="border-t border-slate-800 pt-3 space-y-1">
+        <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 mb-1">Preferences & Tools</p>
+        <button type="button" onclick="toggleDistanceUnit();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center justify-between">
+          <span>🔄 Switch Unit</span>
+          <span id="drawerUnitLabel" class="text-emerald-400 font-bold">KM</span>
+        </button>
+        <button type="button" onclick="toggleVoiceCoach();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center justify-between">
+          <span>🗣️ Voice Coach</span>
+          <span id="drawerVoiceLabel" class="text-emerald-400 font-bold">ON</span>
+        </button>
+        <button type="button" onclick="openBackupModal(); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-emerald-400 hover:bg-slate-800/80 flex items-center gap-3">💾 Backup &amp; Restore</button>
+        <button type="button" onclick="openAboutModal(); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center gap-3">ℹ️ About App</button>
+      </div>
+    </div>
+
+    <div class="p-4 border-t border-slate-800 text-center text-[11px] text-slate-500">
+      OpenStride v2.0 • Offline Ready
+    </div>
+  </div>
+
   <header class="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
@@ -119,25 +161,10 @@
           </button>
         </div>
 
-        <!-- Top-Right 3-Dots Menu -->
-        <div class="relative">
-          <button type="button" onclick="toggleHeaderMenu()" class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 text-white flex items-center justify-center font-bold text-lg hover:bg-slate-800 transition">
-            ⋮
-          </button>
-          <div id="headerDropdownMenu" class="hidden absolute right-0 mt-2 w-48 glass-card rounded-xl border border-slate-700 shadow-2xl py-2 z-50 space-y-1">
-            <button type="button" onclick="switchTab('tracker'); toggleHeaderMenu();" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-800/80 flex items-center gap-2 sm:hidden">📍 Live Tracker</button>
-            <button type="button" onclick="switchTab('steps'); toggleHeaderMenu();" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-800/80 flex items-center gap-2 sm:hidden">👟 Step Counter</button>
-            <button type="button" onclick="switchTab('history'); toggleHeaderMenu();" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-800/80 flex items-center gap-2 sm:hidden">📊 My History</button>
-            <div class="border-t border-slate-800 my-1 sm:hidden"></div>
-            <button type="button" onclick="openBackupModal(); toggleHeaderMenu();" class="w-full text-left px-4 py-2 text-xs font-semibold text-emerald-400 hover:bg-slate-800/80 flex items-center gap-2">💾 Backup &amp; Restore</button>
-            <button type="button" onclick="openAboutModal(); toggleHeaderMenu();" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-800/80 flex items-center gap-2">ℹ️ About App</button>
-            <div class="border-t border-slate-800 my-1"></div>
-            <button type="button" onclick="toggleDistanceUnit(); toggleHeaderMenu();" class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-800/80 flex items-center justify-between sm:hidden">
-              <span>Switch Unit</span>
-              <span id="unitLabelMobile" class="text-emerald-400 font-bold">KM</span>
-            </button>
-          </div>
-        </div>
+        <!-- Clean Slide-Over Trigger Button -->
+        <button type="button" onclick="openNavDrawer()" class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 text-white flex items-center justify-center font-bold text-lg hover:bg-slate-800 transition shadow-lg">
+          ☰
+        </button>
       </div>
     </div>
   </header>
@@ -263,7 +290,7 @@
 
         <div class="grid grid-cols-3 gap-3 text-center">
           <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
-                       <div class="text-[11px] text-slate-400">Est. Distance</div>
+            <div class="text-[11px] text-slate-400">Est. Distance</div>
             <div id="pedoDistance" class="text-xl font-extrabold text-white mono-num mt-1">0.00 km</div>
           </div>
           <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
@@ -297,8 +324,7 @@
         </div>
       </div>
     </div>
-
-    <!-- TAB 3: HISTORY -->
+        <!-- TAB 3: HISTORY -->
     <div id="tabPanelHistory" class="hidden space-y-6">
       <div class="glass-card rounded-2xl p-5 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
@@ -330,8 +356,7 @@
     </div>
 
   </main>
-
-  <script>
+    <script>
     const PRESETS = { easy: { met: 7.0 }, moderate: { met: 9.8 }, tempo: { met: 11.5 } };
     const STEP_FILTERS = { 
       strict: { threshold: 3.8, minGapMs: 480, peakHoldMs: 120 }, 
@@ -340,12 +365,12 @@
     };
 
     const state = {
-          runnerName: '', unit: 'km', mode: 'stopwatch', intensity: 'moderate', targetMs: 20 * 60 * 1000,
+      runnerName: '', unit: 'km', mode: 'stopwatch', intensity: 'moderate', targetMs: 20 * 60 * 1000,
       running: false, elapsedMs: 0, lastTick: 0, timerId: null, distKm: 0, runSteps: 0, cals: 0,
       useRealGps: false, gpsWatchId: null, baseLat: null, baseLng: null, lat: null, lng: null, acc: 0,
       pts: [], mapZoom: 1.0, mapPanX: 0, mapPanY: 0,
       pedoActive: true, pedoSteps: 0, pedoElapsedSec: 0, pedoTimerId: null, stepSensitivity: 'strict',
-      pedoGoal: 6000,
+      pedoGoal: 6000, voiceCoachEnabled: true,
       gravX: 0, gravY: 0, gravZ: 0, lastStepTimestamp: 0, stepPeakArmed: true, history: []
     };
 
@@ -365,6 +390,12 @@
 
         const savedGoal = localStorage.getItem('os_pedo_goal');
         if (savedGoal) state.pedoGoal = parseInt(savedGoal) || 6000;
+
+        const savedVoice = localStorage.getItem('os_voice_coach');
+        if (savedVoice !== null) {
+          state.voiceCoachEnabled = savedVoice === 'true';
+          updateVoiceLabel();
+        }
 
         const daily = JSON.parse(localStorage.getItem('os_daily_steps') || '{}');
         const today = getTodayKey();
@@ -400,6 +431,7 @@
       updateNameDisplays();
       document.getElementById('nameModal').classList.add('hidden');
       showToast(`Welcome, ${state.runnerName}!`, 'emerald');
+      speakCoach(`Welcome ${state.runnerName}. Let's get moving!`);
     }
 
     function updateNameDisplays() {
@@ -419,9 +451,24 @@
       setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2800);
     }
 
-    function toggleHeaderMenu() {
-      const menu = document.getElementById('headerDropdownMenu');
-      if (menu) menu.classList.toggle('hidden');
+    function openNavDrawer() {
+      const drawer = document.getElementById('navDrawer');
+      const backdrop = document.getElementById('drawerBackdrop');
+      if (drawer && backdrop) {
+        backdrop.classList.remove('hidden');
+        setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
+        drawer.classList.remove('translate-x-full');
+      }
+    }
+
+    function closeNavDrawer() {
+      const drawer = document.getElementById('navDrawer');
+      const backdrop = document.getElementById('drawerBackdrop');
+      if (drawer && backdrop) {
+        drawer.classList.add('translate-x-full');
+        backdrop.classList.add('opacity-0');
+        setTimeout(() => backdrop.classList.add('hidden'), 300);
+      }
     }
 
     function openAboutModal() {
@@ -438,12 +485,30 @@
       document.getElementById('backupModal').classList.add('hidden');
     }
 
-    window.addEventListener('click', (e) => {
-      const menu = document.getElementById('headerDropdownMenu');
-      if (menu && !menu.classList.contains('hidden') && !e.target.closest('header')) {
-        menu.classList.add('hidden');
+    function toggleVoiceCoach() {
+      state.voiceCoachEnabled = !state.voiceCoachEnabled;
+      localStorage.setItem('os_voice_coach', state.voiceCoachEnabled);
+      updateVoiceLabel();
+      showToast(`Voice Coach: ${state.voiceCoachEnabled ? 'ON' : 'OFF'}`, 'sky');
+      if (state.voiceCoachEnabled) speakCoach("Voice coach activated.");
+    }
+
+    function updateVoiceLabel() {
+      const lbl = document.getElementById('drawerVoiceLabel');
+      if (lbl) {
+        lbl.textContent = state.voiceCoachEnabled ? 'ON' : 'OFF';
+        lbl.className = state.voiceCoachEnabled ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
       }
-    });
+    }
+
+    function speakCoach(msg) {
+      if (!state.voiceCoachEnabled || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(msg);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
 
     function switchTab(tab) {
       ['tracker', 'steps', 'history'].forEach(t => {
@@ -463,8 +528,8 @@
     function toggleDistanceUnit() {
       state.unit = state.unit === 'km' ? 'mi' : 'km';
       document.getElementById('unitLabel').textContent = state.unit.toUpperCase();
-      const mobLbl = document.getElementById('unitLabelMobile');
-      if (mobLbl) mobLbl.textContent = state.unit.toUpperCase();
+      const drawerLbl = document.getElementById('drawerUnitLabel');
+      if (drawerLbl) drawerLbl.textContent = state.unit.toUpperCase();
       document.getElementById('statDistanceUnit').textContent = state.unit;
       updateTrackerUI(); updatePedometerUI(); renderHistory();
     }
@@ -551,6 +616,7 @@
       });
       saveHistoryToStorage();
       showToast(`Saved ${state.pedoSteps} steps to history!`, 'emerald');
+      speakCoach(`Saved ${state.pedoSteps} steps to history.`);
       switchTab('history');
     }
 
@@ -573,6 +639,7 @@
             state.acc = pos.coords.accuracy || 5;
             state.pts = [{ x: 0, y: 0, lat: state.lat, lng: state.lng }];
             startGpsWatch(); drawMap(); showToast('GPS locked!', 'emerald');
+            speakCoach("GPS connected and locked.");
           },
           () => showToast('Enable Precise Location in settings.', 'rose'),
           { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -580,7 +647,7 @@
       }
     }
 
-      function startGpsWatch() {
+    function startGpsWatch() {
       if (state.gpsWatchId) navigator.geolocation.clearWatch(state.gpsWatchId);
       state.gpsWatchId = navigator.geolocation.watchPosition(
         (pos) => {
@@ -705,11 +772,13 @@
         dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping';
         txt.textContent = 'Tracking Real Run';
         document.getElementById('btnStartPauseText').textContent = 'Pause';
+        speakCoach("Workout started. Let's go!");
       } else {
         clearInterval(state.timerId);
         dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
         txt.textContent = 'Paused';
         document.getElementById('btnStartPauseText').textContent = 'Resume';
+        speakCoach("Workout paused.");
       }
       document.getElementById('btnFinishRun').disabled = (state.elapsedMs === 0 && !state.running);
     }
@@ -717,6 +786,7 @@
     function onRunTick() {
       const now = performance.now();
       state.elapsedMs += Math.min(500, now - state.lastTick);
+      state.lastTick = now;
       state.lastTick = now;
       state.cals = PRESETS[state.intensity].met * 70 * (state.elapsedMs / 3600000);
       if (state.mode === 'countdown' && state.elapsedMs >= state.targetMs) {
@@ -736,12 +806,18 @@
 
     function finishRun() {
       if (state.running) toggleRun();
+      const finalDist = (state.unit === 'km' ? state.distKm : state.distKm * 0.621371).toFixed(2);
+      const finalCals = Math.round(state.cals);
       state.history.unshift({
         date: new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }),
         user: state.runnerName || 'Runner', mode: 'GPS Run', distKm: state.distKm.toFixed(2),
-        sec: Math.round(state.elapsedMs / 1000), steps: state.runSteps, cals: Math.round(state.cals)
+        sec: Math.round(state.elapsedMs / 1000), steps: state.runSteps, cals: finalCals
       });
-      saveHistoryToStorage(); showToast('Run saved!', 'emerald'); resetRun(); switchTab('history');
+      saveHistoryToStorage(); 
+      showToast('Run saved!', 'emerald'); 
+      speakCoach(`Workout finished. You covered ${finalDist} ${state.unit} and burned ${finalCals} calories.`);
+      resetRun(); 
+      switchTab('history');
     }
 
     function resetRun() {
@@ -788,6 +864,7 @@
       a.download = `openstride_backup_${new Date().toISOString().slice(0,10)}.json`;
       a.click();
       showToast('Backup exported successfully!', 'emerald');
+      speakCoach("Backup exported successfully.");
     }
 
     function importWorkoutHistory(event) {
@@ -812,6 +889,14 @@
       reader.readAsText(file);
     }
 
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registered!'))
+          .catch(err => console.log('Service Worker failed: ', err));
+      });
+    }
+
     window.onload = () => {
       loadFromStorage();
       initMapDrag();
@@ -831,5 +916,3 @@
   </script>
 </body>
 </html>
-
-    
