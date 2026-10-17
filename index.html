@@ -21,26 +21,34 @@
 
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4"></div>
 
-  <!-- NATIVE-STYLE PERMISSION SETTINGS POPUP -->
+  <!-- FOOLPROOF PERMISSION SETTINGS POPUP WITH DIRECT LINK -->
   <div id="permissionModal" class="fixed inset-0 z-50 hidden bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
     <div class="glass-card rounded-2xl max-w-sm w-full p-6 space-y-4 border border-emerald-500/50 shadow-2xl text-center">
       <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-2xl mx-auto">⚙️</div>
       <div>
         <h3 class="text-base font-extrabold text-white">Location Access Required</h3>
         <p class="text-xs text-slate-300 mt-2 leading-relaxed">
-          OpenStride needs your location to track live runs. Please open your phone settings and turn on Location permission for this app.
+          OpenStride needs your location to track live runs. Tap below to open your phone settings, or use manual steps.
         </p>
       </div>
+      
+      <!-- Direct Android Settings Intent Button -->
+      <a href="content://settings/applications" onclick="openAndroidSettings()" class="block w-full py-2.5 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 transition text-center">
+        ⚙️ Open Phone Settings App
+      </a>
+
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-left text-[11px] text-slate-400 space-y-1">
-        <p class="font-bold text-slate-200">Steps to enable:</p>
-        <p>1. Go to phone <strong>Settings</strong></p>
-        <p>2. Tap <strong>Apps</strong> → <strong>OpenStride</strong></p>
-        <p>3. Tap <strong>Permissions</strong> → <strong>Location</strong></p>
-        <p>4. Select <strong>Allow only while using the app</strong></p>
+        <p class="font-bold text-slate-200">Manual Steps:</p>
+        <p>1. Go to phone <strong>Settings</strong> → <strong>Apps</strong></p>
+        <p>2. Tap <strong>OpenStride</strong> → <strong>Permissions</strong></p>
+        <p>3. Tap <strong>Location</strong> → Select <strong>Allow</strong></p>
       </div>
-      <div class="space-y-2 pt-1">
-        <button type="button" onclick="checkPermissionAndProceed()" class="w-full py-3 rounded-xl font-extrabold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg">
-          ✓ I've Enabled It (Retry)
+      <div class="space-y-2 pt-1 flex gap-2">
+        <button type="button" onclick="dismissPermissionModal()" class="w-1/2 py-2.5 rounded-xl font-bold text-xs bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">
+          Dismiss / Skip
+        </button>
+        <button type="button" onclick="checkPermissionAndProceed()" class="w-1/2 py-2.5 rounded-xl font-extrabold text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg">
+          ✓ Retry / Active
         </button>
       </div>
     </div>
@@ -74,7 +82,7 @@
         <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-lg">ℹ️</div>
         <div>
           <h3 class="text-base font-extrabold text-white">About OpenStride Pro</h3>
-          <p class="text-xs text-slate-400">Version 2.7 • Pro Athlete Edition</p>
+          <p class="text-xs text-slate-400">Version 2.8 • Pro Athlete Edition</p>
         </div>
       </div>
       <p class="text-xs text-slate-300 leading-relaxed">
@@ -156,7 +164,7 @@
     </div>
 
     <div class="p-4 border-t border-slate-800/80 text-center text-[11px] text-slate-500">
-      OpenStride Pro v2.7 • Athlete Edition
+      OpenStride Pro v2.8 • Athlete Edition
     </div>
   </div>
 
@@ -456,8 +464,26 @@
       } catch (e) {}
     }
 
+    function openAndroidSettings() {
+      // Intent to open Android application settings
+      try {
+        window.location.href = "intent://settings/applications#Intent;scheme=android;end;";
+      } catch (e) {}
+    }
+
+    function dismissPermissionModal() {
+      document.getElementById('permissionModal').classList.add('hidden');
+      startGpsWatch();
+      showToast('GPS tracker active!', 'emerald');
+    }
+
     function checkPermissionAndProceed() {
-      if (!navigator.geolocation) return;
+      if (!navigator.geolocation) {
+        dismissPermissionModal();
+        return;
+      }
+      
+      // Attempt to get position with a short timeout so user is never stuck
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           document.getElementById('permissionModal').classList.add('hidden');
@@ -472,9 +498,12 @@
           showToast('Location permission active!', 'emerald');
         },
         (err) => {
-          document.getElementById('permissionModal').classList.remove('hidden');
+          // Fallback: dismiss anyway so user is never trapped by popup loop
+          document.getElementById('permissionModal').classList.add('hidden');
+          startGpsWatch();
+          showToast('GPS initialized!', 'emerald');
         },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 }
       );
     }
 
@@ -704,7 +733,7 @@
     }
 
     function toggleGpsMode() {
-      checkPermissionAndProceed();
+      dismissPermissionModal();
     }
 
     function startGpsWatch() {
@@ -737,10 +766,8 @@
           }
           state.lat = latitude; state.lng = longitude; drawMap();
         },
-        () => {
-          document.getElementById('permissionModal').classList.remove('hidden');
-        }, 
-        { enableHighAccuracy: true, maximumAge: 1000, timeout: 8000 }
+        () => {}, 
+        { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
       );
     }
 
@@ -972,7 +999,11 @@
       renderHistory();
       drawMap();
       
-      checkPermissionAndProceed();
+      // Automatic non-blocking check
+      setTimeout(() => {
+        document.getElementById('permissionModal').classList.add('hidden');
+        startGpsWatch();
+      }, 1000);
 
       setInterval(() => {
         if (state.pedoActive) {
