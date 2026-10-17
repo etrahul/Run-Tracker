@@ -27,6 +27,7 @@ jobs:
         unzip -q tools.zip -d $ANDROID_HOME/cmdline-tools
         mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
         
+        # Sirf ANDROID_HOME rakhenge taaki conflict na ho
         echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
         echo "PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH" >> $GITHUB_ENV
 
