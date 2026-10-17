@@ -44,7 +44,7 @@ jobs:
         if [ -f icon.png ]; then cp icon.png app/src/main/assets/public/; fi
         if [ -f manifest.json ]; then cp manifest.json app/src/main/assets/public/; fi
 
-    - name: Create Correct Gradle Project Files
+    - name: Create Clean Gradle Project Files
       run: |
         cat << 'EOF' > settings.gradle
         pluginManagement {
@@ -79,22 +79,18 @@ jobs:
                 versionName "1.0"
             }
         }
-        dependencies {
-            implementation 'androidx.appcompat:appcompat:1.6.1'
-            implementation 'androidx.webkit:webkit:1.8.0'
-        }
         EOF
         
         mkdir -p app/src/main/java/com/etrahul/openstride
         cat << 'EOF' > app/src/main/java/com/etrahul/openstride/MainActivity.java
         package com.etrahul.openstride;
 
+        import android.app.Activity;
         import android.os.Bundle;
         import android.webkit.WebView;
         import android.webkit.WebViewClient;
-        import androidx.appcompat.app.AppCompatActivity;
 
-        public class MainActivity extends AppCompatActivity {
+        public class MainActivity extends Activity {
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
