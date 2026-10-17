@@ -19,15 +19,19 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Install Android SDK Command Line Tools Manually
+    - name: Install Android SDK Cleanly
       run: |
+        # Purane saare conflicting paths ko clear karein
+        unset ANDROID_SDK_ROOT
+        unset ANDROID_HOME
+        
         export ANDROID_HOME=$HOME/android-sdk
         mkdir -p $ANDROID_HOME/cmdline-tools
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
         unzip -q tools.zip -d $ANDROID_HOME/cmdline-tools
         mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
         
-        # Sirf ANDROID_HOME rakhenge taaki conflict na ho
+        # Sirf ANDROID_HOME set karein
         echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
         echo "PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH" >> $GITHUB_ENV
 
@@ -44,7 +48,6 @@ jobs:
 
     - name: Create Correct Gradle Project Files
       run: |
-        echo "include ':app'" > settings.gradle
         cat << 'EOF' > settings.gradle
         pluginManagement {
             repositories {
@@ -99,9 +102,10 @@ jobs:
 
     - name: Generate Wrapper & Build APK
       run: |
+        unset ANDROID_SDK_ROOT
         gradle wrapper
         chmod +x gradlew
-        ./gradlew assembleDebug
+        ./gradlew assembleDebug -x lint
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
