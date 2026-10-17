@@ -89,10 +89,10 @@
     </div>
   </div>
 
-  <!-- PROFESSIONAL SIDE-OVER NAVIGATION DRAWER WITH BACKGROUND BLUR -->
-  <div id="drawerBackdrop" class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md hidden transition-opacity opacity-0 duration-300" onclick="closeNavDrawer()"></div>
-  <div id="navDrawer" class="fixed top-0 right-0 z-50 h-full w-80 bg-slate-900 border-l border-slate-800 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
-    <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+  <!-- PROFESSIONAL TRANSPARENT & BLURRED SIDE-OVER DRAWER -->
+  <div id="drawerBackdrop" class="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xl hidden transition-opacity opacity-0 duration-300" onclick="closeNavDrawer()"></div>
+  <div id="navDrawer" class="fixed top-0 right-0 z-50 h-full w-80 bg-slate-900/90 backdrop-blur-2xl border-l border-slate-800/80 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="p-5 border-b border-slate-800/80 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-lg">⚙️</div>
         <div>
@@ -111,7 +111,7 @@
         <button type="button" onclick="switchTab('history'); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center gap-3">📊 My History</button>
       </div>
 
-      <div class="border-t border-slate-800 pt-3 space-y-1">
+      <div class="border-t border-slate-800/80 pt-3 space-y-1">
         <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 mb-1">Preferences & Tools</p>
         <button type="button" onclick="toggleDistanceUnit();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center justify-between">
           <span>🔄 Switch Unit</span>
@@ -126,33 +126,34 @@
       </div>
     </div>
 
-    <div class="p-4 border-t border-slate-800 text-center text-[11px] text-slate-500">
+    <div class="p-4 border-t border-slate-800/80 text-center text-[11px] text-slate-500">
       OpenStride v2.0 • Offline Ready
     </div>
   </div>
 
-    <header class="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg">
-          <span class="text-xl">🏃</span>
+  <!-- FIXED RESPONSIVE HEADER (ALWAYS TOP RIGHT BUTTON) -->
+  <header class="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between flex-nowrap gap-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shrink-0">
+          <span class="text-lg sm:text-xl">🏃</span>
         </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-lg font-extrabold text-white">OpenStride</h1>
-            <button type="button" onclick="openNameModal()" class="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-base sm:text-lg font-extrabold text-white truncate">OpenStride</h1>
+            <button type="button" onclick="openNameModal()" class="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400 truncate max-w-[130px]">
               👤 <span id="headerRunnerName">Enter Name</span> ✎
             </button>
           </div>
-          <p class="text-xs text-slate-400">GPS-RUN Tracker, Auto Pedometer &amp; History</p>
+          <p class="text-[11px] sm:text-xs text-slate-400 truncate">GPS-RUN Tracker, Pedometer &amp; History</p>
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 shrink-0">
         <nav class="hidden sm:flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
-          <button id="tabBtnTracker" type="button" onclick="switchTab('tracker')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all bg-emerald-500 text-slate-950 shadow">Live Tracker</button>
-          <button id="tabBtnSteps" type="button" onclick="switchTab('steps')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white">Step Counter</button>
-          <button id="tabBtnHistory" type="button" onclick="switchTab('history')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white">My History</button>
+          <button id="tabBtnTracker" type="button" onclick="switchTab('tracker')" class="px-3 py-1.5 rounded-lg text-sm font-bold transition-all bg-emerald-500 text-slate-950 shadow">Live Tracker</button>
+          <button id="tabBtnSteps" type="button" onclick="switchTab('steps')" class="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-300 hover:text-white">Step Counter</button>
+          <button id="tabBtnHistory" type="button" onclick="switchTab('history')" class="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-300 hover:text-white">My History</button>
         </nav>
 
         <div class="hidden sm:flex items-center gap-2">
@@ -161,8 +162,8 @@
           </button>
         </div>
 
-        <!-- Top Right Corner 3-Line Menu Button -->
-        <button type="button" onclick="openNavDrawer()" class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 text-white flex items-center justify-center font-bold text-lg hover:bg-slate-800 transition shadow-lg">
+        <!-- Top Right Corner Menu Button -->
+        <button type="button" onclick="openNavDrawer()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-900 border border-slate-700 text-white flex items-center justify-center font-bold text-base sm:text-lg hover:bg-slate-800 transition shadow-lg shrink-0">
           ☰
         </button>
       </div>
@@ -324,7 +325,8 @@
         </div>
       </div>
     </div>
-        <!-- TAB 3: HISTORY -->
+
+    <!-- TAB 3: HISTORY -->
     <div id="tabPanelHistory" class="hidden space-y-6">
       <div class="glass-card rounded-2xl p-5 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
@@ -356,7 +358,8 @@
     </div>
 
   </main>
-    <script>
+
+  <script>
     const PRESETS = { easy: { met: 7.0 }, moderate: { met: 9.8 }, tempo: { met: 11.5 } };
     const STEP_FILTERS = { 
       strict: { threshold: 3.8, minGapMs: 480, peakHoldMs: 120 }, 
@@ -786,7 +789,6 @@
     function onRunTick() {
       const now = performance.now();
       state.elapsedMs += Math.min(500, now - state.lastTick);
-      state.lastTick = now;
       state.lastTick = now;
       state.cals = PRESETS[state.intensity].met * 70 * (state.elapsedMs / 3600000);
       if (state.mode === 'countdown' && state.elapsedMs >= state.targetMs) {
