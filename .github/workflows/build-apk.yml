@@ -31,7 +31,8 @@ jobs:
         echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_ENV
         echo "$ANDROID_HOME/platform-tools" >> $GITHUB_ENV
 
-        yes | sdkmanager --licenses
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+        yes | sdkmanager --licenses || true
         sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
     - name: Build Web App Package
@@ -88,3 +89,4 @@ jobs:
       with:
         name: OpenStride-Android-APK
         path: app/build/outputs/apk/debug/app-debug.apk
+        
