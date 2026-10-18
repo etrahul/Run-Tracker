@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#10b981" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22OpenStride%20GPS%20Tracker%22%2C%22short_name%22%3A%22OpenStride%22%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23090d16%22%2C%22theme_color%22%3A%22%2310b981%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20192%20192'%3E%3Crect%20width%3D'192'%20height%3D'192'%20rx%3D'42'%20fill%3D'%2310b981'%2F%3E%3Ctext%20x%3D'50%25'%20y%3D'55%25'%20font-size%3D'90'%20text-anchor%3D'middle'%20dominant-baseline%3D'middle'%3E🏃%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg+xml%22%7D%5D%7D">
   <title>OpenStride Pro — 100% Offline GPS Tracker, Pedometer &amp; AI Coach</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <style>
-    /* Complete Offline-First Base & Utility Fallback Stylesheet (Works 100% Without Internet) */
+    /* 100% Self-Contained Offline Stylesheet (Zero External CDN Requests Required) */
     *, ::before, ::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: #1e293b; }
     html, body {
       margin: 0; padding: 0; min-height: 100vh;
@@ -17,20 +15,21 @@
       background-color: #020617; color: #f1f5f9; overflow-x: hidden;
       -webkit-tap-highlight-color: transparent;
     }
+    .font-sans { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
     .mono-num {
       font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-variant-numeric: tabular-nums;
     }
-    .glass-card, select, input, button { max-width: 100%; box-sizing: border-box; font-family: inherit; }
+    .glass-card, select, input, button { max-width: 100%; box-sizing: border-box; font-family: inherit; color: inherit; }
+    button { cursor: pointer; background: transparent; }
     .glass-card {
-      background: rgba(15, 23, 42, 0.90);
+      background: rgba(15, 23, 42, 0.92);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(51, 65, 85, 0.65);
     }
     canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
 
-    /* Offline Layout & Utility Fallbacks in case CDN is offline */
     .hidden { display: none !important; }
     .flex { display: flex; }
     .grid { display: grid; }
@@ -41,6 +40,8 @@
     .flex-nowrap { flex-wrap: nowrap; }
     .flex-1 { flex: 1 1 0%; }
     .shrink-0 { flex-shrink: 0; }
+    .min-w-0 { min-width: 0px; }
+    .min-h-screen { min-height: 100vh; }
     .items-center { align-items: center; }
     .items-start { align-items: flex-start; }
     .justify-center { justify-content: center; }
@@ -51,6 +52,7 @@
     .gap-2\.5 { gap: 0.625rem; }
     .gap-3 { gap: 0.75rem; }
     .gap-6 { gap: 1.5rem; }
+    .space-y-0\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.125rem; }
     .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; }
     .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
     .space-y-2\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.625rem; }
@@ -58,19 +60,28 @@
     .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
     .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.25rem; }
     .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem; }
+    .divide-y > :not([hidden]) ~ :not([hidden]) { border-top-width: 1px; border-color: rgba(30, 41, 59, 0.6); }
+
     .w-full { width: 100%; }
     .h-full { height: 100%; }
-    .h-80 { height: 20rem; }
+    .w-2 { width: 0.5rem; } .h-2 { height: 0.5rem; }
+    .w-2\.5 { width: 0.625rem; } .h-2\.5 { height: 0.625rem; }
+    .w-8 { width: 2rem; } .h-8 { height: 2rem; }
     .w-9 { width: 2.25rem; } .h-9 { height: 2.25rem; }
     .w-10 { width: 2.5rem; } .h-10 { height: 2.5rem; }
+    .w-11 { width: 2.75rem; } .h-11 { height: 2.75rem; }
     .w-12 { width: 3rem; } .h-12 { height: 3rem; }
     .w-24 { width: 6rem; }
     .w-80 { width: 20rem; }
+    .h-80 { height: 20rem; }
+    .max-w-\[110px\] { max-width: 110px; }
+    .max-w-\[150px\] { max-width: 150px; }
     .max-w-sm { max-width: 24rem; }
     .max-w-md { max-width: 28rem; }
     .max-w-2xl { max-width: 42rem; }
     .max-w-7xl { max-width: 80rem; }
     .mx-auto { margin-left: auto; margin-right: auto; }
+
     .p-1 { padding: 0.25rem; }
     .p-3 { padding: 0.75rem; }
     .p-3\.5 { padding: 0.875rem; }
@@ -80,6 +91,7 @@
     .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
     .px-2\.5 { padding-left: 0.625rem; padding-right: 0.625rem; }
     .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .px-3\.5 { padding-left: 0.875rem; padding-right: 0.875rem; }
     .px-4 { padding-left: 1rem; padding-right: 1rem; }
     .px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
     .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
@@ -93,10 +105,12 @@
     .py-3\.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; }
     .py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
     .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+    .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
     .pt-1 { padding-top: 0.25rem; } .pt-2 { padding-top: 0.5rem; } .pt-3 { padding-top: 0.75rem; }
     .pb-3 { padding-bottom: 0.75rem; } .pb-4 { padding-bottom: 1rem; }
     .mt-0\.5 { margin-top: 0.125rem; } .mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; }
     .mb-1 { margin-bottom: 0.25rem; } .mb-1\.5 { margin-bottom: 0.375rem; }
+
     .rounded { border-radius: 0.25rem; }
     .rounded-lg { border-radius: 0.5rem; }
     .rounded-xl { border-radius: 0.75rem; }
@@ -107,21 +121,28 @@
     .border-t { border-top-width: 1px; }
     .border-l { border-left-width: 1px; }
     .border-t-4 { border-top-width: 4px; }
+    .border-collapse { border-collapse: collapse; }
+
     .bg-slate-950 { background-color: #020617; }
+    .bg-slate-950\/50 { background-color: rgba(2, 6, 23, 0.5); }
+    .bg-slate-950\/85 { background-color: rgba(2, 6, 23, 0.85); }
     .bg-slate-950\/90 { background-color: rgba(2, 6, 23, 0.9); }
     .bg-slate-950\/95 { background-color: rgba(2, 6, 23, 0.95); }
-    .bg-slate-950\/85 { background-color: rgba(2, 6, 23, 0.85); }
     .bg-slate-900 { background-color: #0f172a; }
-    .bg-slate-900\/95 { background-color: rgba(15, 23, 42, 0.95); }
-    .bg-slate-900\/90 { background-color: rgba(15, 23, 42, 0.9); }
     .bg-slate-900\/80 { background-color: rgba(15, 23, 42, 0.8); }
+    .bg-slate-900\/90 { background-color: rgba(15, 23, 42, 0.9); }
+    .bg-slate-900\/95 { background-color: rgba(15, 23, 42, 0.95); }
     .bg-slate-800 { background-color: #1e293b; }
+    .bg-slate-500 { background-color: #64748b; }
+    .bg-emerald-400 { background-color: #34d399; }
     .bg-emerald-500 { background-color: #10b981; }
     .bg-emerald-500\/20 { background-color: rgba(16, 185, 129, 0.2); }
+    .bg-amber-400 { background-color: #fbbf24; }
     .bg-amber-500 { background-color: #f59e0b; }
     .bg-rose-600 { background-color: #e11d48; }
     .bg-rose-500\/20 { background-color: rgba(244, 63, 94, 0.2); }
     .bg-sky-500\/20 { background-color: rgba(14, 165, 233, 0.2); }
+
     .text-white { color: #ffffff; }
     .text-slate-950 { color: #020617; }
     .text-slate-100 { color: #f1f5f9; }
@@ -137,17 +158,27 @@
     .text-amber-400 { color: #fbbf24; }
     .text-rose-300 { color: #fda4af; }
     .text-rose-400 { color: #fb7185; }
+
     .border-slate-700 { border-color: #334155; }
     .border-slate-800 { border-color: #1e293b; }
+    .border-slate-800\/80 { border-color: rgba(30, 41, 59, 0.8); }
     .border-emerald-500\/40 { border-color: rgba(16, 185, 129, 0.4); }
+    .border-emerald-500\/60 { border-color: rgba(16, 185, 129, 0.6); }
+    .border-amber-500\/30 { border-color: rgba(245, 158, 11, 0.3); }
+    .border-amber-500\/60 { border-color: rgba(245, 158, 11, 0.6); }
     .border-sky-500\/30 { border-color: rgba(14, 165, 233, 0.3); }
+    .border-sky-500\/40 { border-color: rgba(14, 165, 233, 0.4); }
+    .border-sky-500\/60 { border-color: rgba(14, 165, 233, 0.6); }
     .border-t-sky-500 { border-top-color: #0ea5e9; }
+    .border-rose-500\/40 { border-color: rgba(244, 63, 94, 0.4); }
     .border-rose-500\/50 { border-color: rgba(244, 63, 94, 0.5); }
+    .border-rose-500\/60 { border-color: rgba(244, 63, 94, 0.6); }
+
     .text-center { text-align: center; }
     .text-left { text-align: left; }
     .text-right { text-align: right; }
-    .text-\[10px\] { font-size: 10px; }
-    .text-\[11px\] { font-size: 11px; }
+    .text-\[10px\] { font-size: 10px; line-height: 14px; }
+    .text-\[11px\] { font-size: 11px; line-height: 15px; }
     .text-xs { font-size: 0.75rem; line-height: 1rem; }
     .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
     .text-base { font-size: 1rem; line-height: 1.5rem; }
@@ -162,9 +193,12 @@
     .font-bold { font-weight: 700; }
     .font-extrabold { font-weight: 800; }
     .uppercase { text-transform: uppercase; }
+    .leading-relaxed { line-height: 1.625; }
     .tracking-wider { letter-spacing: 0.05em; }
     .tracking-widest { letter-spacing: 0.1em; }
     .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .whitespace-nowrap { white-space: nowrap; }
+
     .relative { position: relative; }
     .absolute { position: absolute; }
     .fixed { position: fixed; }
@@ -180,18 +214,48 @@
     .overflow-x-auto { overflow-x: auto; }
     .overflow-y-auto { overflow-y: auto; }
     .pointer-events-none { pointer-events: none; }
+    .cursor-pointer { cursor: pointer; }
+    .cursor-grab { cursor: grab; }
+    .shadow { box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+    .shadow-lg { box-shadow: 0 8px 20px rgba(0,0,0,0.45); }
+    .shadow-xl, .shadow-2xl { box-shadow: 0 16px 36px rgba(0,0,0,0.65); }
+
+    .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
     .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .col-span-2 { grid-column: span 2 / span 2; }
+    .opacity-0 { opacity: 0; }
     .translate-x-full { transform: translateX(100%); }
     .transition, .transition-all, .transition-transform, .transition-opacity { transition: all 0.25s ease; }
     button:disabled { opacity: 0.4; cursor: not-allowed; }
+    input:focus, select:focus { outline: none; border-color: #10b981; }
+
     @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
     .animate-ping { animation: ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+
     @media (min-width: 640px) {
       .sm\:hidden { display: none !important; }
       .sm\:flex { display: flex !important; }
-      .sm\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .sm\:flex-row { flex-direction: row !important; }
+      .sm\:items-center { align-items: center !important; }
+      .sm\:w-auto { width: auto !important; }
+      .sm\:w-10 { width: 2.5rem !important; }
+      .sm\:h-10 { height: 2.5rem !important; }
+      .sm\:h-96 { height: 24rem !important; }
+      .sm\:p-5 { padding: 1.25rem !important; }
+      .sm\:px-4 { padding-left: 1rem !important; padding-right: 1rem !important; }
+      .sm\:text-xs { font-size: 0.75rem !important; }
+      .sm\:text-\[11px\] { font-size: 11px !important; }
+      .sm\:text-lg { font-size: 1.125rem !important; }
+      .sm\:text-xl { font-size: 1.25rem !important; }
+      .sm\:text-6xl { font-size: 3.75rem !important; }
+      .sm\:text-7xl { font-size: 4.5rem !important; }
+      .sm\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+    }
+    @media (min-width: 1024px) {
+      .lg\:grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)) !important; }
+      .lg\:col-span-7 { grid-column: span 7 / span 7 !important; }
+      .lg\:col-span-5 { grid-column: span 5 / span 5 !important; }
     }
   </style>
 </head>
@@ -985,7 +1049,6 @@
         state.kalmanVar = acc * acc;
         return { lat, lng };
       }
-      // Low process noise when stationary, higher when actively walking/running
       const isActivelyMoving = (Date.now() - state.lastWalkingTime) < 3500;
       state.kalmanVar += isActivelyMoving ? 3.2 : 0.4;
       const K = state.kalmanVar / (state.kalmanVar + acc * acc);
@@ -1025,7 +1088,6 @@
         badge.className = 'text-emerald-400 font-bold flex items-center gap-1.5';
       }
 
-      // First fix OR re-anchoring before workout starts if satellite accuracy improves
       if (state.lat === null || (!state.running && state.pts.length <= 1)) {
         state.kalmanLat = rawLat;
         state.kalmanLng = rawLng;
@@ -1041,8 +1103,7 @@
         return;
       }
 
-      // STRICT ANTI-JUMP RULE 1: During a run, ignore coarse cell-tower fixes (accuracy > 22m)
-      // so the route line NEVER jumps to a nearby mobile tower!
+      // STRICT ANTI-JUMP RULE 1: Ignore coarse cell-tower fixes during run
       if (state.running && acc > 22 && prevAcc <= 15) {
         drawMap();
         return;
@@ -1055,13 +1116,11 @@
       const dtSec = Math.max(0.5, (now - (state.lastGpsTime || now - 1000)) / 1000);
       const impliedSpeedMs = stepMeters / dtSec;
 
-      // STRICT ANTI-JUMP RULE 2: Verify the athlete is actually moving!
-      // Either pedometer steps were detected in the last 4 seconds OR satellite Doppler speed >= 0.65 m/s (2.3 km/h)
+      // STRICT ANTI-JUMP RULE 2: Verify the athlete is actually moving
       const stepsRecentlyTaken = (now - state.lastWalkingTime) <= 4000;
       const hasDopplerSpeed = (typeof rawSpeedMs === 'number' && rawSpeedMs >= 0.65 && acc <= 12);
       const isAthleteMoving = stepsRecentlyTaken || hasDopplerSpeed;
 
-      // Minimum distance required to plot a new map vertex (prevents stationary jitter blobs)
       const minMoveMeters = Math.max(3.5, Math.min(8.0, acc * 0.35));
 
       if (state.running) {
@@ -1070,7 +1129,6 @@
           const strideFloorKm = (state.runSteps * 0.76) / 1000;
           state.distKm = Math.max(state.gpsDistKm, strideFloorKm * 0.85);
 
-          // Live Speed: prefer true Doppler speed or verified movement speed
           const activeSpeedMs = (typeof rawSpeedMs === 'number' && rawSpeedMs >= 0.4)
             ? rawSpeedMs
             : Math.min(impliedSpeedMs, 9.5);
@@ -1099,13 +1157,11 @@
           }
           updateTrackerUI();
         } else if (!isAthleteMoving) {
-          // Athlete is standing still: DO NOT move the map pin or add fake route lines!
           if ((now - state.lastMoveTimestamp) > 2000) {
             state.currentSpeedKmh = 0;
           }
         }
       } else {
-        // Pre-run: keep start position locked to latest high-accuracy fix
         state.baseLat = smoothed.lat;
         state.baseLng = smoothed.lng;
         state.lat = smoothed.lat;
@@ -1117,10 +1173,8 @@
       drawMap();
     }
 
-    // Global callback invoked directly by Native Android LocationManager in MainActivity.java
     window.onNativeGpsUpdate = function(lat, lng, acc, speed) {
       state.nativeGpsActive = true;
-      // Stop duplicate WebView geolocation watch once native hardware GPS is feeding fixes
       if (state.gpsWatchId !== null) {
         try { navigator.geolocation.clearWatch(state.gpsWatchId); } catch (e) {}
         state.gpsWatchId = null;
@@ -1230,7 +1284,6 @@
       if (state.running) {
         state.runSteps += countToAdd;
 
-        // Calculate instantaneous live walking/running speed from step cadence
         if (stepDtSec >= 0.22 && stepDtSec <= 1.5) {
           const stepsPerSec = Math.min(4.0, countToAdd / stepDtSec);
           const cadenceSpeedKmh = stepsPerSec * 0.76 * 3.6;
@@ -1260,7 +1313,6 @@
       }
     }
 
-    // Invoked by Native Android TYPE_STEP_DETECTOR / TYPE_STEP_COUNTER if hardware sensor present
     window.onNativeStepDetected = function(stepsAdded) {
       state.hasHardwareStepSensor = true;
       const badge = document.getElementById('pedoStatusBadge');
@@ -1331,7 +1383,6 @@
       }
     });
 
-    // Active Walking Time Counter (ticks every 1s, increments only when walking occurred in last 2.5s)
     setInterval(() => {
       if (state.pedoActive && (Date.now() - state.lastWalkingTime) <= 2500) {
         state.pedoElapsedSec++;
@@ -1469,7 +1520,6 @@
       ctx.fillStyle = theme.bg;
       ctx.fillRect(0, 0, w, h);
 
-      // Keep latest athlete position centered unless panned, and auto-scale bounding box
       const lastPt = state.pts.length > 0 ? state.pts[state.pts.length - 1] : { x: 0, y: 0 };
       let maxSpanMeters = 25;
       state.pts.forEach(p => {
@@ -1479,7 +1529,6 @@
       const cx = w / 2 + state.mapPanX;
       const cy = h / 2 + state.mapPanY;
 
-      // 1. Tactical Coordinate Grid
       const gridStep = Math.max(24, Math.min(80, 10 * pixelsPerMeter));
       ctx.strokeStyle = theme.grid;
       ctx.lineWidth = 1;
@@ -1492,7 +1541,6 @@
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
       }
 
-      // 2. Radar Range Rings around current athlete position
       ctx.strokeStyle = theme.rings;
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
@@ -1503,9 +1551,7 @@
       });
       ctx.setLineDash([]);
 
-      // 3. Draw Verified Route Trail
       if (state.pts.length > 1) {
-        // Outer glow
         ctx.strokeStyle = theme.glow;
         ctx.lineWidth = 10;
         ctx.lineCap = 'round';
@@ -1519,7 +1565,6 @@
         });
         ctx.stroke();
 
-        // Core crisp route line
         ctx.strokeStyle = theme.line;
         ctx.lineWidth = 4;
         ctx.beginPath();
@@ -1532,7 +1577,6 @@
         ctx.stroke();
       }
 
-      // 4. Draw Start Marker & Current Athlete Marker
       if (state.pts.length > 0) {
         const first = state.pts[0];
         const startPx = cx + (first.x - lastPt.x) * pixelsPerMeter;
@@ -1548,14 +1592,12 @@
           ctx.fillText('START', startPx + 9, startPy + 3);
         }
 
-        // GPS Accuracy Halo around current position
         const accRadiusPx = Math.min(60, Math.max(12, (state.acc || 8) * pixelsPerMeter * 0.4));
         ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
         ctx.beginPath();
         ctx.arc(cx, cy, accRadiusPx, 0, Math.PI * 2);
         ctx.fill();
 
-        // Live Athlete Pin
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(cx, cy, 8, 0, Math.PI * 2);
@@ -1566,7 +1608,6 @@
         ctx.fill();
       }
 
-      // 5. Compass Rose (Bottom Left) & Scale Bar (Bottom Right)
       const compX = 28, compY = h - 28;
       ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
       ctx.beginPath();
@@ -1584,7 +1625,6 @@
       ctx.fillText('▲', compX, compY + 8);
       ctx.textAlign = 'left';
 
-      // Scale Bar
       const scaleMeters = Math.max(5, Math.round(50 / pixelsPerMeter / 5) * 5);
       const barWidthPx = Math.min(90, Math.max(35, scaleMeters * pixelsPerMeter));
       const bx = w - barWidthPx - 14, by = h - 16;
@@ -1667,15 +1707,12 @@
       state.elapsedMs += Math.min(500, now - state.lastTick);
       state.lastTick = now;
 
-      // AUTO-ZERO LIVE SPEED WHEN STOPPED:
-      // If no step or verified GPS movement happened in the last 2.2 seconds, decay speed to 0.0 km/h!
       const idleMs = Date.now() - (state.lastMoveTimestamp || 0);
       if (idleMs > 2200) {
         state.currentSpeedKmh = state.currentSpeedKmh * 0.72;
         if (state.currentSpeedKmh < 0.35) state.currentSpeedKmh = 0;
       }
 
-      // Calories calculation based on active distance + steps
       const distCals = state.distKm * 65;
       const stepCals = state.runSteps * 0.045;
       state.cals = Math.max(distCals, stepCals);
@@ -1702,7 +1739,6 @@
       document.getElementById('statRunSteps').textContent = state.runSteps;
       document.getElementById('statCalories').textContent = Math.round(state.cals);
 
-      // Show TRUE instantaneous live speed (0.0 km/h when stopped!)
       const speedEl = document.getElementById('statSpeed');
       const liveSpeedDisp = state.unit === 'km' ? state.currentSpeedKmh : state.currentSpeedKmh * 0.621371;
       if (speedEl) {
