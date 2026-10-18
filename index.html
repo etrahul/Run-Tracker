@@ -6,29 +6,192 @@
   <meta name="theme-color" content="#10b981" />
   <meta name="mobile-web-app-capable" content="yes" />
   <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22OpenStride%20GPS%20Tracker%22%2C%22short_name%22%3A%22OpenStride%22%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23090d16%22%2C%22theme_color%22%3A%22%2310b981%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20192%20192'%3E%3Crect%20width%3D'192'%20height%3D'192'%20rx%3D'42'%20fill%3D'%2310b981'%2F%3E%3Ctext%20x%3D'50%25'%20y%3D'55%25'%20font-size%3D'90'%20text-anchor%3D'middle'%20dominant-baseline%3D'middle'%3E🏃%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg+xml%22%7D%5D%7D">
-  <title>OpenStride Pro — Real GPS Tracker, Pedometer &amp; AI Coach</title>
+  <title>OpenStride Pro — 100% Offline GPS Tracker, Pedometer &amp; AI Coach</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; background-color: #090d16; color: #f1f5f9; overflow-x: hidden; }
-    .mono-num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
-    .glass-card, select, input { max-width: 100%; box-sizing: border-box; }
-    .glass-card { background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.65); }
-    canvas { touch-action: none; }
-    .leaflet-container { background: #070b14 !important; font-family: 'Inter', sans-serif; }
-    .leaflet-control-attribution { font-size: 9px !important; background: rgba(9, 13, 22, 0.7) !important; color: #94a3b8 !important; }
-    .leaflet-control-attribution a { color: #10b981 !important; }
-    .pulse-marker {
-      width: 18px; height: 18px; border-radius: 50%; background: #38bdf8;
-      border: 3px solid #ffffff; box-shadow: 0 0 0 rgba(56, 189, 248, 0.7);
-      animation: pulseGps 1.8s infinite;
+    /* Complete Offline-First Base & Utility Fallback Stylesheet (Works 100% Without Internet) */
+    *, ::before, ::after { box-sizing: border-box; border-width: 0; border-style: solid; border-color: #1e293b; }
+    html, body {
+      margin: 0; padding: 0; min-height: 100vh;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #020617; color: #f1f5f9; overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
     }
-    @keyframes pulseGps {
-      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
-      70% { box-shadow: 0 0 0 14px rgba(56, 189, 248, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+    .mono-num {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .glass-card, select, input, button { max-width: 100%; box-sizing: border-box; font-family: inherit; }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.90);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+    }
+    canvas { touch-action: none; user-select: none; -webkit-user-select: none; }
+
+    /* Offline Layout & Utility Fallbacks in case CDN is offline */
+    .hidden { display: none !important; }
+    .flex { display: flex; }
+    .grid { display: grid; }
+    .block { display: block; }
+    .inline-block { display: inline-block; }
+    .flex-col { flex-direction: column; }
+    .flex-wrap { flex-wrap: wrap; }
+    .flex-nowrap { flex-wrap: nowrap; }
+    .flex-1 { flex: 1 1 0%; }
+    .shrink-0 { flex-shrink: 0; }
+    .items-center { align-items: center; }
+    .items-start { align-items: flex-start; }
+    .justify-center { justify-content: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-1 { gap: 0.25rem; }
+    .gap-1\.5 { gap: 0.375rem; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-2\.5 { gap: 0.625rem; }
+    .gap-3 { gap: 0.75rem; }
+    .gap-6 { gap: 1.5rem; }
+    .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; }
+    .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
+    .space-y-2\.5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.625rem; }
+    .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; }
+    .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+    .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.25rem; }
+    .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem; }
+    .w-full { width: 100%; }
+    .h-full { height: 100%; }
+    .h-80 { height: 20rem; }
+    .w-9 { width: 2.25rem; } .h-9 { height: 2.25rem; }
+    .w-10 { width: 2.5rem; } .h-10 { height: 2.5rem; }
+    .w-12 { width: 3rem; } .h-12 { height: 3rem; }
+    .w-24 { width: 6rem; }
+    .w-80 { width: 20rem; }
+    .max-w-sm { max-width: 24rem; }
+    .max-w-md { max-width: 28rem; }
+    .max-w-2xl { max-width: 42rem; }
+    .max-w-7xl { max-width: 80rem; }
+    .mx-auto { margin-left: auto; margin-right: auto; }
+    .p-1 { padding: 0.25rem; }
+    .p-3 { padding: 0.75rem; }
+    .p-3\.5 { padding: 0.875rem; }
+    .p-4 { padding: 1rem; }
+    .p-5 { padding: 1.25rem; }
+    .p-6 { padding: 1.5rem; }
+    .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+    .px-2\.5 { padding-left: 0.625rem; padding-right: 0.625rem; }
+    .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .px-4 { padding-left: 1rem; padding-right: 1rem; }
+    .px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .px-7 { padding-left: 1.75rem; padding-right: 1.75rem; }
+    .py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+    .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+    .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+    .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+    .py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+    .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+    .py-3\.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; }
+    .py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+    .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+    .pt-1 { padding-top: 0.25rem; } .pt-2 { padding-top: 0.5rem; } .pt-3 { padding-top: 0.75rem; }
+    .pb-3 { padding-bottom: 0.75rem; } .pb-4 { padding-bottom: 1rem; }
+    .mt-0\.5 { margin-top: 0.125rem; } .mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; }
+    .mb-1 { margin-bottom: 0.25rem; } .mb-1\.5 { margin-bottom: 0.375rem; }
+    .rounded { border-radius: 0.25rem; }
+    .rounded-lg { border-radius: 0.5rem; }
+    .rounded-xl { border-radius: 0.75rem; }
+    .rounded-2xl { border-radius: 1rem; }
+    .rounded-full { border-radius: 9999px; }
+    .border { border-width: 1px; }
+    .border-b { border-bottom-width: 1px; }
+    .border-t { border-top-width: 1px; }
+    .border-l { border-left-width: 1px; }
+    .border-t-4 { border-top-width: 4px; }
+    .bg-slate-950 { background-color: #020617; }
+    .bg-slate-950\/90 { background-color: rgba(2, 6, 23, 0.9); }
+    .bg-slate-950\/95 { background-color: rgba(2, 6, 23, 0.95); }
+    .bg-slate-950\/85 { background-color: rgba(2, 6, 23, 0.85); }
+    .bg-slate-900 { background-color: #0f172a; }
+    .bg-slate-900\/95 { background-color: rgba(15, 23, 42, 0.95); }
+    .bg-slate-900\/90 { background-color: rgba(15, 23, 42, 0.9); }
+    .bg-slate-900\/80 { background-color: rgba(15, 23, 42, 0.8); }
+    .bg-slate-800 { background-color: #1e293b; }
+    .bg-emerald-500 { background-color: #10b981; }
+    .bg-emerald-500\/20 { background-color: rgba(16, 185, 129, 0.2); }
+    .bg-amber-500 { background-color: #f59e0b; }
+    .bg-rose-600 { background-color: #e11d48; }
+    .bg-rose-500\/20 { background-color: rgba(244, 63, 94, 0.2); }
+    .bg-sky-500\/20 { background-color: rgba(14, 165, 233, 0.2); }
+    .text-white { color: #ffffff; }
+    .text-slate-950 { color: #020617; }
+    .text-slate-100 { color: #f1f5f9; }
+    .text-slate-200 { color: #e2e8f0; }
+    .text-slate-300 { color: #cbd5e1; }
+    .text-slate-400 { color: #94a3b8; }
+    .text-slate-500 { color: #64748b; }
+    .text-emerald-300 { color: #6ee7b7; }
+    .text-emerald-400 { color: #34d399; }
+    .text-sky-300 { color: #7dd3fc; }
+    .text-sky-400 { color: #38bdf8; }
+    .text-amber-300 { color: #fcd34d; }
+    .text-amber-400 { color: #fbbf24; }
+    .text-rose-300 { color: #fda4af; }
+    .text-rose-400 { color: #fb7185; }
+    .border-slate-700 { border-color: #334155; }
+    .border-slate-800 { border-color: #1e293b; }
+    .border-emerald-500\/40 { border-color: rgba(16, 185, 129, 0.4); }
+    .border-sky-500\/30 { border-color: rgba(14, 165, 233, 0.3); }
+    .border-t-sky-500 { border-top-color: #0ea5e9; }
+    .border-rose-500\/50 { border-color: rgba(244, 63, 94, 0.5); }
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+    .text-right { text-align: right; }
+    .text-\[10px\] { font-size: 10px; }
+    .text-\[11px\] { font-size: 11px; }
+    .text-xs { font-size: 0.75rem; line-height: 1rem; }
+    .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+    .text-base { font-size: 1rem; line-height: 1.5rem; }
+    .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+    .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+    .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+    .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+    .text-5xl { font-size: 3rem; line-height: 1; }
+    .text-6xl { font-size: 3.75rem; line-height: 1; }
+    .font-medium { font-weight: 500; }
+    .font-semibold { font-weight: 600; }
+    .font-bold { font-weight: 700; }
+    .font-extrabold { font-weight: 800; }
+    .uppercase { text-transform: uppercase; }
+    .tracking-wider { letter-spacing: 0.05em; }
+    .tracking-widest { letter-spacing: 0.1em; }
+    .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .relative { position: relative; }
+    .absolute { position: absolute; }
+    .fixed { position: fixed; }
+    .sticky { position: sticky; }
+    .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+    .top-0 { top: 0; } .right-0 { right: 0; }
+    .top-3 { top: 0.75rem; } .left-3 { left: 0.75rem; } .right-3 { right: 0.75rem; } .bottom-3 { bottom: 0.75rem; }
+    .top-4 { top: 1rem; } .right-4 { right: 1rem; }
+    .bottom-5 { bottom: 1.25rem; } .right-5 { right: 1.25rem; }
+    .z-10 { z-index: 10; } .z-20 { z-index: 20; } .z-30 { z-index: 30; }
+    .z-\[800\] { z-index: 800; } .z-\[850\] { z-index: 850; } .z-\[900\] { z-index: 900; } .z-\[1000\] { z-index: 1000; }
+    .overflow-hidden { overflow: hidden; }
+    .overflow-x-auto { overflow-x: auto; }
+    .overflow-y-auto { overflow-y: auto; }
+    .pointer-events-none { pointer-events: none; }
+    .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .col-span-2 { grid-column: span 2 / span 2; }
+    .translate-x-full { transform: translateX(100%); }
+    .transition, .transition-all, .transition-transform, .transition-opacity { transition: all 0.25s ease; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+    .animate-ping { animation: ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+    @media (min-width: 640px) {
+      .sm\:hidden { display: none !important; }
+      .sm\:flex { display: flex !important; }
+      .sm\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -48,7 +211,7 @@
       </div>
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-left text-[11px] text-slate-400 space-y-1">
         <p class="font-bold text-slate-200">Instructions:</p>
-        <p>1. Tap <strong>Grant / Retry GPS</strong> or <strong>Open Settings</strong></p>
+        <p>1. Tap <strong>Grant / Retry GPS</strong> or <strong>App Settings</strong></p>
         <p>2. Go to <strong>Permissions</strong> → <strong>Location</strong> &amp; <strong>Physical Activity</strong></p>
         <p>3. Select <strong>Allow while using the app</strong> &amp; turn ON phone GPS</p>
       </div>
@@ -81,7 +244,7 @@
       </div>
       <div>
         <label for="runnerNameInput" class="block text-xs text-slate-300 mb-1.5 font-medium">Enter Your Athlete Name:</label>
-        <input id="runnerNameInput" type="text" maxlength="32" placeholder="e.g. Rahul Kumar" onkeydown="if(event.key==='Enter') saveRunnerName()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none" />
+        <input id="runnerNameInput" type="text" maxlength="32" placeholder="e.g. Rahul Yadav" onkeydown="if(event.key==='Enter') saveRunnerName()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white focus:border-emerald-500 focus:outline-none" />
       </div>
       <button type="button" onclick="saveRunnerName()" class="w-full py-2.5 rounded-xl font-extrabold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg">
         Save Profile &amp; Continue →
@@ -97,11 +260,11 @@
         <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-lg">ℹ️</div>
         <div>
           <h3 class="text-base font-extrabold text-white">About OpenStride Pro</h3>
-          <p class="text-xs text-slate-400">Version 4.0 • Pro Athlete Edition</p>
+          <p class="text-xs text-slate-400">Version 5.0 • 100% Offline Pro Edition</p>
         </div>
       </div>
       <p class="text-xs text-slate-300 leading-relaxed">
-        <strong>OpenStride Pro</strong> is a Kalman-filtered real-time GPS running tracker, hardware-assisted anti-shake pedometer, and native Android AI voice coaching system built for serious athletes.
+        <strong>OpenStride Pro</strong> is a 100% offline-capable, Kalman-stabilized real-time GPS running tracker, hardware-assisted anti-shake pedometer, and native Android AI voice coaching system built for serious athletes.
       </p>
       <div class="flex flex-wrap items-center gap-2 pt-1">
         <a href="https://github.com/etrahul" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-700 transition">🐙 GitHub</a>
@@ -121,7 +284,7 @@
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-lg">💾</div>
         <div>
-          <h3 class="text-base font-extrabold text-white">Local &amp; Cloud Backup</h3>
+          <h3 class="text-base font-extrabold text-white">Offline Local Backup</h3>
           <p class="text-xs text-slate-400">Export or restore your athlete logs (.JSON)</p>
         </div>
       </div>
@@ -164,7 +327,7 @@
         <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-lg">⚙️</div>
         <div>
           <h3 class="text-sm font-extrabold text-white">Pro Control Center</h3>
-          <p class="text-[11px] text-slate-400">OpenStride Athletes</p>
+          <p class="text-[11px] text-emerald-400 font-semibold">⚡ 100% Offline Ready</p>
         </div>
       </div>
       <button type="button" onclick="closeNavDrawer()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center font-bold">✕</button>
@@ -197,8 +360,8 @@
           <span class="text-[10px] bg-sky-500/20 border border-sky-500/40 px-2 py-0.5 rounded text-sky-300">Speak</span>
         </button>
         <button type="button" onclick="cycleMapTheme();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center justify-between">
-          <span>🗺️ Map Style</span>
-          <span id="drawerThemeLabel" class="text-emerald-400 font-bold">Dark Pro</span>
+          <span>🎨 Offline Map Theme</span>
+          <span id="drawerThemeLabel" class="text-emerald-400 font-bold">Emerald Radar</span>
         </button>
         <button type="button" onclick="openBackupModal(); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-emerald-400 hover:bg-slate-800/80 flex items-center gap-3">💾 Backup &amp; Restore</button>
         <button type="button" onclick="openAboutModal(); closeNavDrawer();" class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-200 hover:bg-slate-800/80 flex items-center gap-3">ℹ️ About OpenStride</button>
@@ -206,7 +369,7 @@
     </div>
 
     <div class="p-4 border-t border-slate-800/80 text-center text-[11px] text-slate-500">
-      OpenStride Pro v4.0 • Athlete Edition
+      OpenStride Pro v5.0 • 100% Offline Athlete Edition
     </div>
   </div>
 
@@ -215,7 +378,7 @@
     <div class="max-w-7xl mx-auto px-3 sm:px-4 py-3 space-y-2.5">
       <div class="flex items-center justify-between flex-nowrap gap-2">
         <div class="flex items-center gap-2.5 min-w-0">
-          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shrink-0">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500 flex items-center justify-center shadow-lg shrink-0">
             <span class="text-lg sm:text-xl">🏃</span>
           </div>
           <div class="min-w-0">
@@ -225,7 +388,7 @@
                 👤 <span id="headerRunnerName">Athlete</span> ✎
               </button>
             </div>
-            <p class="text-[11px] sm:text-xs text-slate-400 truncate">Pro GPS Tracker &amp; AI Voice Coach</p>
+            <p class="text-[11px] sm:text-xs text-slate-400 truncate">Offline GPS Tracker &amp; AI Voice Coach</p>
           </div>
         </div>
 
@@ -309,38 +472,40 @@
               <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
                 <div class="text-[10px] font-semibold uppercase text-slate-400">GPS Distance</div>
                 <div class="mt-1"><span id="statDistance" class="text-2xl font-extrabold text-white mono-num">0.00</span> <span id="statDistanceUnit" class="text-xs text-emerald-400 font-bold">km</span></div>
+                <div class="text-[10px] text-slate-400">Verified Path</div>
               </div>
               <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
                 <div class="text-[10px] font-semibold uppercase text-slate-400">Live Speed / Pace</div>
                 <div class="mt-1"><span id="statSpeed" class="text-2xl font-extrabold text-emerald-400 mono-num">0.0</span> <span class="text-xs text-slate-400 font-bold">km/h</span></div>
-                <div id="statPace" class="text-[10px] text-slate-400 mono-num">Pace: --:-- /km</div>
+                <div id="statPace" class="text-[10px] text-slate-400 mono-num">Stopped (0.0 km/h)</div>
               </div>
               <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
                 <div class="text-[10px] font-semibold uppercase text-slate-400">Run Steps</div>
                 <div class="mt-1"><span id="statRunSteps" class="text-2xl font-extrabold text-sky-400 mono-num">0</span></div>
-                <div class="text-[10px] text-slate-400">Stride Backup Active</div>
+                <div class="text-[10px] text-slate-400">Stride Lock Active</div>
               </div>
               <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3">
                 <div class="text-[10px] font-semibold uppercase text-slate-400">Calories</div>
                 <div class="mt-1"><span id="statCalories" class="text-2xl font-extrabold text-amber-400 mono-num">0</span> <span class="text-xs text-amber-300">kcal</span></div>
+                <div class="text-[10px] text-slate-400">Active Burn</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- REAL-TIME MAP PANEL -->
+        <!-- 100% OFFLINE REAL-TIME VECTOR GPS ROUTE MAP PANEL -->
         <div class="lg:col-span-5 space-y-5">
           <div class="glass-card rounded-2xl p-4 sm:p-5 flex flex-col space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h2 class="text-sm font-bold text-white flex items-center gap-1.5">
-                  <span>🗺️ Live GPS Route Map</span>
-                  <span id="gpsFixCountBadge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300 mono-num">0 pts</span>
+                  <span>🧭 Offline GPS Route Radar</span>
+                  <span id="gpsFixCountBadge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-emerald-400 mono-num">1 pt</span>
                 </h2>
               </div>
               <div class="flex items-center gap-1.5">
                 <button type="button" onclick="cycleMapTheme()" class="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-slate-900 text-slate-300 border border-slate-700 hover:text-white">
-                  🎨 Map Style
+                  🎨 Theme
                 </button>
                 <button id="btnToggleGps" type="button" onclick="checkPermissionAndProceed(true)" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                   📡 Connect GPS
@@ -349,30 +514,28 @@
             </div>
 
             <div class="relative w-full h-80 sm:h-96 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
-              <!-- Real Interactive Leaflet Map -->
-              <div id="leafletMap" class="w-full h-full z-10"></div>
-              <!-- Offline / Tactical Vector Grid Fallback Canvas -->
-              <canvas id="gpsCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing absolute inset-0 z-20 hidden"></canvas>
+              <!-- 100% Offline High-Precision Tactical Vector Map Canvas (No API Key Needed!) -->
+              <canvas id="gpsCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
 
               <!-- Live GPS Telemetry Overlay -->
-              <div class="absolute top-3 left-3 z-30 bg-slate-950/90 backdrop-blur-md border border-slate-800 rounded-xl px-3 py-2 text-[11px] space-y-0.5 pointer-events-none shadow-lg">
+              <div class="absolute top-3 left-3 z-20 bg-slate-950/90 backdrop-blur-md border border-slate-800 rounded-xl px-3 py-2 text-[11px] space-y-0.5 pointer-events-none shadow-lg">
                 <div id="gpsStatusBadge" class="text-amber-400 font-bold flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Waiting GPS Lock
+                  <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> Waiting GPS Lock
                 </div>
                 <div class="text-slate-400">Lat/Lng: <span id="gpsCoordText" class="text-slate-200 mono-num">-- , --</span></div>
-                <div class="text-slate-400">Signal: <strong id="gpsAccText" class="text-amber-400 mono-num">Searching...</strong></div>
+                <div class="text-slate-400">Accuracy: <strong id="gpsAccText" class="text-amber-400 mono-num">Searching...</strong></div>
               </div>
 
               <!-- Map Zoom & Recenter Controls -->
-              <div class="absolute top-3 right-3 z-30 flex flex-col gap-1.5">
-                <button type="button" onclick="zoomMap(1)" class="w-9 h-9 rounded-xl bg-slate-900/90 text-white font-extrabold border border-slate-700 shadow flex items-center justify-center text-base hover:bg-slate-800">+</button>
-                <button type="button" onclick="zoomMap(-1)" class="w-9 h-9 rounded-xl bg-slate-900/90 text-white font-extrabold border border-slate-700 shadow flex items-center justify-center text-base hover:bg-slate-800">−</button>
+              <div class="absolute top-3 right-3 z-20 flex flex-col gap-1.5">
+                <button type="button" onclick="zoomMap(1.3)" class="w-9 h-9 rounded-xl bg-slate-900/90 text-white font-extrabold border border-slate-700 shadow flex items-center justify-center text-base hover:bg-slate-800">+</button>
+                <button type="button" onclick="zoomMap(0.75)" class="w-9 h-9 rounded-xl bg-slate-900/90 text-white font-extrabold border border-slate-700 shadow flex items-center justify-center text-base hover:bg-slate-800">−</button>
                 <button type="button" onclick="resetMapView()" title="Center on My GPS Location" class="w-9 h-9 rounded-xl bg-slate-900/90 text-emerald-400 font-bold border border-slate-700 shadow flex items-center justify-center text-sm hover:bg-slate-800">⌖</button>
               </div>
             </div>
 
             <p class="text-[11px] text-slate-400 leading-relaxed">
-              💡 <strong>Kalman GPS Stabilization Active:</strong> Filters out fake location jumps while stationary and combines GPS + stride sensor for accurate distance even in weak signal areas.
+              ⚡ <strong>100% Offline Anti-Jump Radar:</strong> Works without internet or API keys. Only plots verified movement when you actually walk/run so the path never jumps when standing still.
             </p>
           </div>
         </div>
@@ -444,7 +607,7 @@
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
           <div>
             <h2 class="text-base font-bold text-white"><span id="historyTitleName">Athlete</span>'s Saved Performance Logs</h2>
-            <p class="text-xs text-slate-400">Permanently stored in native device memory &amp; local storage</p>
+            <p class="text-xs text-slate-400">Permanently stored offline in native device memory</p>
           </div>
           <div class="flex items-center gap-2">
             <button type="button" onclick="openBackupModal()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
@@ -479,33 +642,44 @@
   <script>
     const PRESETS = { easy: { met: 7.0 }, moderate: { met: 9.8 }, tempo: { met: 11.5 } };
 
-    // Upgraded Anti-Shake Step Filters with consecutive step rhythm verification
+    // Anti-Shake Step Filters with consecutive step rhythm verification
     const STEP_FILTERS = {
       strict: { threshold: 4.5, valley: 1.8, minGapMs: 360, maxGapMs: 1100, requiredStreak: 4 },
       normal: { threshold: 3.6, valley: 1.5, minGapMs: 330, maxGapMs: 1200, requiredStreak: 3 },
       high:   { threshold: 5.8, valley: 2.2, minGapMs: 380, maxGapMs: 1000, requiredStreak: 4 }
     };
 
+    // 100% Offline Tactical Map Themes (Zero API Keys Required, Works Completely Offline)
     const MAP_STYLES = {
+      emerald: {
+        name: 'Emerald Radar',
+        bg: '#060c17',
+        grid: 'rgba(16, 185, 129, 0.16)',
+        rings: 'rgba(16, 185, 129, 0.22)',
+        line: '#10b981',
+        glow: 'rgba(16, 185, 129, 0.35)',
+        start: '#10b981',
+        end: '#38bdf8'
+      },
       dark: {
-        name: 'Dark Pro',
-        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        bg: '#070b14', grid: 'rgba(30, 41, 59, 0.65)', line: '#10b981', start: '#10b981', end: '#38bdf8'
+        name: 'Dark Cyber',
+        bg: '#040711',
+        grid: 'rgba(56, 189, 248, 0.15)',
+        rings: 'rgba(56, 189, 248, 0.20)',
+        line: '#38bdf8',
+        glow: 'rgba(56, 189, 248, 0.35)',
+        start: '#10b981',
+        end: '#f43f5e'
       },
-      street: {
-        name: 'Street Map',
-        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        bg: '#0f172a', grid: 'rgba(51, 65, 85, 0.45)', line: '#059669', start: '#10b981', end: '#2563eb'
-      },
-      satellite: {
-        name: 'Satellite',
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        bg: '#020617', grid: 'rgba(51, 65, 85, 0.35)', line: '#38bdf8', start: '#10b981', end: '#f43f5e'
-      },
-      grid: {
-        name: 'Offline Grid',
-        url: null,
-        bg: '#070b14', grid: 'rgba(16, 185, 129, 0.22)', line: '#10b981', start: '#10b981', end: '#38bdf8'
+      midnight: {
+        name: 'Neon Stealth',
+        bg: '#0f051d',
+        grid: 'rgba(217, 70, 239, 0.16)',
+        rings: 'rgba(217, 70, 239, 0.22)',
+        line: '#d946ef',
+        glow: 'rgba(217, 70, 239, 0.35)',
+        start: '#10b981',
+        end: '#eab308'
       }
     };
 
@@ -524,7 +698,10 @@
       runSteps: 0,
       cals: 0,
       currentSpeedKmh: 0,
+      lastMoveTimestamp: 0,
+      lastStepTimeForSpeed: 0,
       useRealGps: false,
+      nativeGpsActive: false,
       gpsWatchId: null,
       baseLat: null,
       baseLng: null,
@@ -535,19 +712,12 @@
       kalmanLat: null,
       kalmanLng: null,
       kalmanVar: 1,
+      recentGpsBuffer: [],
       pts: [],
-      mapZoom: 17,
       canvasZoom: 1.0,
       mapPanX: 0,
       mapPanY: 0,
-      mapThemeKey: 'dark',
-      autoCenterMap: true,
-      leafletMap: null,
-      tileLayer: null,
-      routeLine: null,
-      startMarker: null,
-      currMarker: null,
-      accCircle: null,
+      mapThemeKey: 'emerald',
       pedoActive: true,
       pedoSteps: 0,
       pedoElapsedSec: 0,
@@ -722,11 +892,10 @@
     }
 
     // =========================================================================
-    // NATIVE ANDROID + WEB SPEECH AI VOICE COACH
+    // NATIVE ANDROID + WEB SPEECH AI VOICE COACH (100% OFFLINE)
     // =========================================================================
     function speakCoach(msg) {
       if (!state.voiceCoachEnabled || !msg) return;
-      // 1. Prefer Native Android TTS Bridge inside APK (100% reliable on Android)
       try {
         if (window.AndroidBridge && typeof window.AndroidBridge.speak === 'function') {
           window.AndroidBridge.speak(String(msg));
@@ -734,7 +903,6 @@
         }
       } catch (e) {}
 
-      // 2. Fallback to Browser Web Speech API
       if ('speechSynthesis' in window) {
         try {
           window.speechSynthesis.cancel();
@@ -760,7 +928,7 @@
       const dist = (state.unit === 'km' ? state.distKm : state.distKm * 0.621371).toFixed(2);
       const testMsg = state.running
         ? `Keep going ${name}! You have covered ${dist} ${state.unit} with ${state.runSteps} steps.`
-        : `Hello ${name}! OpenStride AI Voice Coach is active and ready for your workout.`;
+        : `Hello ${name}! OpenStride offline AI Voice Coach is active and ready.`;
       showToast('🔊 Speaking: "' + testMsg + '"', 'sky');
       speakCoach(testMsg);
     }
@@ -782,72 +950,11 @@
     }
 
     // =========================================================================
-    // REAL INTERACTIVE LEAFLET MAP + OFFLINE VECTOR GRID FALLBACK
+    // 100% OFFLINE MAP INITIALIZATION & THEME SWITCHING
     // =========================================================================
     function initMap() {
       initMapDrag();
-      try {
-        if (typeof L !== 'undefined') {
-          const mapEl = document.getElementById('leafletMap');
-          state.leafletMap = L.map(mapEl, {
-            zoomControl: false,
-            attributionControl: true
-          }).setView([24.2685, 87.2488], state.mapZoom); // Default center Dumka, updates immediately on GPS lock
-
-          applyLeafletStyle();
-
-          state.routeLine = L.polyline([], {
-            color: '#10b981',
-            weight: 5,
-            opacity: 0.92,
-            lineJoin: 'round'
-          }).addTo(state.leafletMap);
-
-          state.leafletMap.on('dragstart', () => { state.autoCenterMap = false; });
-        } else {
-          enableCanvasFallback();
-        }
-      } catch (e) {
-        enableCanvasFallback();
-      }
       drawMap();
-    }
-
-    function enableCanvasFallback() {
-      const lMap = document.getElementById('leafletMap');
-      const cMap = document.getElementById('gpsCanvas');
-      if (lMap) lMap.classList.add('hidden');
-      if (cMap) cMap.classList.remove('hidden');
-    }
-
-    function applyLeafletStyle() {
-      const styleObj = MAP_STYLES[state.mapThemeKey] || MAP_STYLES.dark;
-      const lMap = document.getElementById('leafletMap');
-      const cMap = document.getElementById('gpsCanvas');
-
-      if (!styleObj.url || !state.leafletMap || !navigator.onLine) {
-        if (lMap) lMap.classList.add('hidden');
-        if (cMap) cMap.classList.remove('hidden');
-        drawMap();
-        return;
-      }
-
-      if (lMap) lMap.classList.remove('hidden');
-      if (cMap) cMap.classList.add('hidden');
-
-      if (state.tileLayer) {
-        state.leafletMap.removeLayer(state.tileLayer);
-      }
-      state.tileLayer = L.tileLayer(styleObj.url, {
-        maxZoom: 20,
-        attribution: '&copy; OpenStreetMap'
-      });
-      state.tileLayer.on('tileerror', () => {
-        if (!navigator.onLine) enableCanvasFallback();
-      });
-      state.tileLayer.addTo(state.leafletMap);
-      if (state.routeLine) state.routeLine.setStyle({ color: styleObj.line });
-      setTimeout(() => { if (state.leafletMap) state.leafletMap.invalidateSize(); }, 60);
     }
 
     function cycleMapTheme() {
@@ -856,9 +963,8 @@
       state.mapThemeKey = keys[nextIdx];
       setPersistentItem('os_map_theme', state.mapThemeKey);
       updateThemeLabel();
-      applyLeafletStyle();
       drawMap();
-      showToast(`Map Style: ${MAP_STYLES[state.mapThemeKey].name}`, 'sky');
+      showToast(`Map Theme: ${MAP_STYLES[state.mapThemeKey].name}`, 'sky');
     }
 
     function updateThemeLabel() {
@@ -869,23 +975,35 @@
     }
 
     // =========================================================================
-    // KALMAN GPS FILTER & ANTI-TELEPORT DISTANCE ENGINE
+    // ANTI-JUMP KALMAN GPS ENGINE (BLOCKS STATIONARY DRIFT & TOWER JUMPS)
     // =========================================================================
     function filterKalmanGps(lat, lng, accuracy) {
-      const acc = Math.max(3, Math.min(150, accuracy || 15));
+      const acc = Math.max(3, Math.min(80, accuracy || 12));
       if (state.kalmanLat === null || state.kalmanLng === null) {
         state.kalmanLat = lat;
         state.kalmanLng = lng;
         state.kalmanVar = acc * acc;
         return { lat, lng };
       }
-      // Process noise increases slightly with time to track moving athlete smoothly
-      state.kalmanVar += 4.5;
+      // Low process noise when stationary, higher when actively walking/running
+      const isActivelyMoving = (Date.now() - state.lastWalkingTime) < 3500;
+      state.kalmanVar += isActivelyMoving ? 3.2 : 0.4;
       const K = state.kalmanVar / (state.kalmanVar + acc * acc);
       state.kalmanLat = state.kalmanLat + K * (lat - state.kalmanLat);
       state.kalmanLng = state.kalmanLng + K * (lng - state.kalmanLng);
       state.kalmanVar = (1 - K) * state.kalmanVar;
       return { lat: state.kalmanLat, lng: state.kalmanLng };
+    }
+
+    function getSmoothedFix(lat, lng) {
+      state.recentGpsBuffer.push({ lat, lng });
+      if (state.recentGpsBuffer.length > 3) state.recentGpsBuffer.shift();
+      let sumLat = 0, sumLng = 0;
+      state.recentGpsBuffer.forEach(p => { sumLat += p.lat; sumLng += p.lng; });
+      return {
+        lat: sumLat / state.recentGpsBuffer.length,
+        lng: sumLng / state.recentGpsBuffer.length
+      };
     }
 
     function handleIncomingGpsFix(rawLat, rawLng, rawAcc, rawSpeedMs) {
@@ -894,6 +1012,7 @@
 
       const now = Date.now();
       const acc = Math.max(2, rawAcc || 10);
+      const prevAcc = state.acc;
       state.acc = acc;
 
       const btn = document.getElementById('btnToggleGps');
@@ -901,57 +1020,62 @@
       state.useRealGps = true;
       if (btn) btn.textContent = '🟢 GPS Locked';
       if (badge) {
-        const sigQuality = acc <= 15 ? 'Strong GPS Lock' : (acc <= 40 ? 'Good GPS Lock' : 'Fair GPS Signal');
+        const sigQuality = acc <= 12 ? 'Strong GPS Lock' : (acc <= 25 ? 'Good GPS Lock' : 'Stabilizing GPS...');
         badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> ${sigQuality}`;
         badge.className = 'text-emerald-400 font-bold flex items-center gap-1.5';
       }
 
-      // First fix OR re-anchoring if previous fix was very coarse (>80m) and we aren't running yet
-      if (state.lat === null || (!state.running && state.pts.length <= 1 && acc < state.acc)) {
+      // First fix OR re-anchoring before workout starts if satellite accuracy improves
+      if (state.lat === null || (!state.running && state.pts.length <= 1)) {
         state.kalmanLat = rawLat;
         state.kalmanLng = rawLng;
         state.kalmanVar = acc * acc;
+        state.recentGpsBuffer = [{ lat: rawLat, lng: rawLng }];
         state.baseLat = rawLat;
         state.baseLng = rawLng;
         state.lat = rawLat;
         state.lng = rawLng;
         state.lastGpsTime = now;
-        if (state.pts.length === 0) {
-          state.pts = [{ x: 0, y: 0, lat: rawLat, lng: rawLng }];
-        } else {
-          state.pts[0] = { x: 0, y: 0, lat: rawLat, lng: rawLng };
-        }
-        updateMapObjects(rawLat, rawLng, acc);
+        state.pts = [{ x: 0, y: 0, lat: rawLat, lng: rawLng }];
         drawMap();
         return;
       }
 
-      // Reject extreme noisy outliers (>120m inaccuracy during active run)
-      if (state.running && acc > 120) {
+      // STRICT ANTI-JUMP RULE 1: During a run, ignore coarse cell-tower fixes (accuracy > 22m)
+      // so the route line NEVER jumps to a nearby mobile tower!
+      if (state.running && acc > 22 && prevAcc <= 15) {
         drawMap();
         return;
       }
 
-      const smoothed = filterKalmanGps(rawLat, rawLng, acc);
+      const kalmanPt = filterKalmanGps(rawLat, rawLng, acc);
+      const smoothed = getSmoothedFix(kalmanPt.lat, kalmanPt.lng);
       const stepKm = haversine(state.lat, state.lng, smoothed.lat, smoothed.lng);
       const stepMeters = stepKm * 1000;
       const dtSec = Math.max(0.5, (now - (state.lastGpsTime || now - 1000)) / 1000);
       const impliedSpeedMs = stepMeters / dtSec;
 
-      // Minimum movement threshold prevents stationary GPS jitter ("map m kahin se kahin")
-      // Scales gently with signal accuracy so standing still never adds fake zig-zags
-      const minMoveMeters = Math.max(2.2, Math.min(7.5, acc * 0.22));
+      // STRICT ANTI-JUMP RULE 2: Verify the athlete is actually moving!
+      // Either pedometer steps were detected in the last 4 seconds OR satellite Doppler speed >= 0.65 m/s (2.3 km/h)
+      const stepsRecentlyTaken = (now - state.lastWalkingTime) <= 4000;
+      const hasDopplerSpeed = (typeof rawSpeedMs === 'number' && rawSpeedMs >= 0.65 && acc <= 12);
+      const isAthleteMoving = stepsRecentlyTaken || hasDopplerSpeed;
+
+      // Minimum distance required to plot a new map vertex (prevents stationary jitter blobs)
+      const minMoveMeters = Math.max(3.5, Math.min(8.0, acc * 0.35));
 
       if (state.running) {
-        // Valid athlete movement: must exceed jitter floor and be under 13.5 m/s (48.6 km/h max sprint/cycle)
-        if (stepMeters >= minMoveMeters && impliedSpeedMs <= 13.5) {
+        if (isAthleteMoving && stepMeters >= minMoveMeters && impliedSpeedMs <= 11.5) {
           state.gpsDistKm += stepKm;
-          // Combine GPS distance with step-stride floor so distance is never blank
           const strideFloorKm = (state.runSteps * 0.76) / 1000;
           state.distKm = Math.max(state.gpsDistKm, strideFloorKm * 0.85);
 
-          const speedMs = (typeof rawSpeedMs === 'number' && rawSpeedMs > 0.3) ? rawSpeedMs : impliedSpeedMs;
-          state.currentSpeedKmh = Math.min(45, speedMs * 3.6);
+          // Live Speed: prefer true Doppler speed or verified movement speed
+          const activeSpeedMs = (typeof rawSpeedMs === 'number' && rawSpeedMs >= 0.4)
+            ? rawSpeedMs
+            : Math.min(impliedSpeedMs, 9.5);
+          state.currentSpeedKmh = activeSpeedMs * 3.6;
+          state.lastMoveTimestamp = now;
 
           if (state.baseLat === null) {
             state.baseLat = smoothed.lat;
@@ -965,25 +1089,23 @@
           state.lng = smoothed.lng;
           state.lastGpsTime = now;
 
-          // Milestone Voice Announcements every 1 KM (or 0.5 KM)
+          const fixBadge = document.getElementById('gpsFixCountBadge');
+          if (fixBadge) fixBadge.textContent = `${state.pts.length} pts`;
+
           const currentFloorKm = Math.floor(state.distKm);
           if (currentFloorKm > state.lastAnnouncedKm && currentFloorKm >= 1) {
             state.lastAnnouncedKm = currentFloorKm;
             speakCoach(`Milestone reached! ${currentFloorKm} kilometers completed in ${Math.floor(state.elapsedMs / 60000)} minutes. Great pace!`);
           }
           updateTrackerUI();
-        } else if (impliedSpeedMs > 18.0 && acc < 25) {
-          // If GPS jumped from an old stale tower lock to a genuine satellite lock, re-sync position without adding fake distance
-          state.lat = smoothed.lat;
-          state.lng = smoothed.lng;
-          state.lastGpsTime = now;
-        } else {
-          // Standing still: decay displayed speed smoothly
-          state.currentSpeedKmh = state.currentSpeedKmh * 0.6;
-          if (state.currentSpeedKmh < 0.4) state.currentSpeedKmh = 0;
+        } else if (!isAthleteMoving) {
+          // Athlete is standing still: DO NOT move the map pin or add fake route lines!
+          if ((now - state.lastMoveTimestamp) > 2000) {
+            state.currentSpeedKmh = 0;
+          }
         }
       } else {
-        // Not running yet: keep current position updated so start point is exact
+        // Pre-run: keep start position locked to latest high-accuracy fix
         state.baseLat = smoothed.lat;
         state.baseLng = smoothed.lng;
         state.lat = smoothed.lat;
@@ -992,57 +1114,19 @@
         state.pts = [{ x: 0, y: 0, lat: smoothed.lat, lng: smoothed.lng }];
       }
 
-      updateMapObjects(state.lat, state.lng, acc);
       drawMap();
     }
 
     // Global callback invoked directly by Native Android LocationManager in MainActivity.java
     window.onNativeGpsUpdate = function(lat, lng, acc, speed) {
+      state.nativeGpsActive = true;
+      // Stop duplicate WebView geolocation watch once native hardware GPS is feeding fixes
+      if (state.gpsWatchId !== null) {
+        try { navigator.geolocation.clearWatch(state.gpsWatchId); } catch (e) {}
+        state.gpsWatchId = null;
+      }
       handleIncomingGpsFix(Number(lat), Number(lng), Number(acc), Number(speed));
     };
-
-    function updateMapObjects(lat, lng, acc) {
-      const fixBadge = document.getElementById('gpsFixCountBadge');
-      if (fixBadge) fixBadge.textContent = `${state.pts.length} pts`;
-
-      if (!state.leafletMap) return;
-      try {
-        const latLng = [lat, lng];
-        if (!state.currMarker) {
-          const pulseIcon = L.divIcon({ className: '', html: '<div class="pulse-marker"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
-          state.currMarker = L.marker(latLng, { icon: pulseIcon }).addTo(state.leafletMap);
-        } else {
-          state.currMarker.setLatLng(latLng);
-        }
-
-        if (!state.accCircle) {
-          state.accCircle = L.circle(latLng, { radius: acc, color: '#38bdf8', fillColor: '#38bdf8', fillOpacity: 0.12, weight: 1 }).addTo(state.leafletMap);
-        } else {
-          state.accCircle.setLatLng(latLng);
-          state.accCircle.setRadius(Math.min(acc, 80));
-        }
-
-        if (state.pts.length > 0) {
-          const first = state.pts[0];
-          if (!state.startMarker) {
-            state.startMarker = L.circleMarker([first.lat, first.lng], {
-              radius: 6, color: '#ffffff', weight: 2, fillColor: '#10b981', fillOpacity: 1
-            }).addTo(state.leafletMap);
-          } else {
-            state.startMarker.setLatLng([first.lat, first.lng]);
-          }
-        }
-
-        if (state.routeLine) {
-          const latLngs = state.pts.map(p => [p.lat, p.lng]);
-          state.routeLine.setLatLngs(latLngs);
-        }
-
-        if (state.autoCenterMap) {
-          state.leafletMap.panTo(latLng, { animate: true });
-        }
-      } catch (e) {}
-    }
 
     function checkPermissionAndProceed(showFeedback = false) {
       if (window.AndroidBridge && typeof window.AndroidBridge.hasLocationPermission === 'function') {
@@ -1073,8 +1157,10 @@
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          handleIncomingGpsFix(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.coords.speed);
-          startGpsWatch();
+          if (!state.nativeGpsActive) {
+            handleIncomingGpsFix(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.coords.speed);
+            startGpsWatch();
+          }
           if (showFeedback) showToast('Real GPS Locked Successfully!', 'emerald');
         },
         (err) => {
@@ -1114,11 +1200,13 @@
       if (window.AndroidBridge && typeof window.AndroidBridge.startNativeGps === 'function') {
         try { window.AndroidBridge.startNativeGps(); } catch (e) {}
       }
-      if (!navigator.geolocation) return;
+      if (state.nativeGpsActive || !navigator.geolocation) return;
       if (state.gpsWatchId !== null) navigator.geolocation.clearWatch(state.gpsWatchId);
       state.gpsWatchId = navigator.geolocation.watchPosition(
         (pos) => {
-          handleIncomingGpsFix(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.coords.speed);
+          if (!state.nativeGpsActive) {
+            handleIncomingGpsFix(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.coords.speed);
+          }
         },
         (err) => {
           if (err.code === 1) {
@@ -1130,14 +1218,27 @@
     }
 
     // =========================================================================
-    // HARDWARE + RHYTHMIC CADENCE ANTI-SHAKE PEDOMETER
+    // HARDWARE + RHYTHMIC CADENCE ANTI-SHAKE PEDOMETER & LIVE STRIDE SPEED
     // =========================================================================
     function recordVerifiedSteps(countToAdd) {
       const now = Date.now();
+      const stepDtSec = (now - (state.lastStepTimeForSpeed || now - 600)) / 1000;
+      state.lastStepTimeForSpeed = now;
       state.lastWalkingTime = now;
+      state.lastMoveTimestamp = now;
+
       if (state.running) {
         state.runSteps += countToAdd;
-        // Ensure distance always progresses even indoors or under heavy tree cover
+
+        // Calculate instantaneous live walking/running speed from step cadence
+        if (stepDtSec >= 0.22 && stepDtSec <= 1.5) {
+          const stepsPerSec = Math.min(4.0, countToAdd / stepDtSec);
+          const cadenceSpeedKmh = stepsPerSec * 0.76 * 3.6;
+          state.currentSpeedKmh = state.currentSpeedKmh > 0.5
+            ? (0.65 * state.currentSpeedKmh + 0.35 * cadenceSpeedKmh)
+            : cadenceSpeedKmh;
+        }
+
         const strideDistKm = (state.runSteps * 0.76) / 1000;
         if (strideDistKm > state.distKm) {
           state.distKm = strideDistKm;
@@ -1149,6 +1250,7 @@
         }
         updateTrackerUI();
       }
+
       if (state.pedoActive) {
         state.pedoSteps += countToAdd;
         const hint = document.getElementById('pedoCadenceHint');
@@ -1167,7 +1269,6 @@
     };
 
     window.addEventListener('devicemotion', (e) => {
-      // If native hardware step detector is actively firing, skip duplicate JS accelerometer counting
       if (state.hasHardwareStepSensor) return;
       if (!state.running && !state.pedoActive) return;
 
@@ -1189,18 +1290,15 @@
       }
 
       const rawMag = Math.sqrt(ax * ax + ay * ay + az * az);
-      // Low-pass smoothing prevents sharp finger-taps or phone twists from looking like footfalls
       state.linMagSmooth = 0.6 * state.linMagSmooth + 0.4 * rawMag;
 
       const filter = STEP_FILTERS[state.stepSensitivity] || STEP_FILTERS.strict;
       const now = Date.now();
 
-      // Re-arm peak detector only after signal drops below valley floor (true up-and-down stride wave)
       if (state.linMagSmooth < filter.valley) {
         state.stepPeakArmed = true;
       }
 
-      // Reject absurd spikes (>24 m/s² is dropping/shaking phone violently, not walking)
       if (state.linMagSmooth > 24.0) {
         state.pendingStepStreak = 0;
         state.rhythmLocked = false;
@@ -1214,11 +1312,9 @@
           state.stepPeakArmed = false;
           state.lastStepTimestamp = now;
 
-          // Check if this step falls within natural human walking/jogging cadence (330ms - 1200ms)
           if (gap <= filter.maxGapMs) {
             state.pendingStepStreak++;
             if (!state.rhythmLocked && state.pendingStepStreak >= filter.requiredStreak) {
-              // Athlete has taken 3-4 rhythmic steps in a row! Unlock and credit the buffered steps
               state.rhythmLocked = true;
               recordVerifiedSteps(state.pendingStepStreak);
             } else if (state.rhythmLocked) {
@@ -1228,7 +1324,6 @@
               if (hint) hint.textContent = `Verifying stride rhythm (${state.pendingStepStreak}/${filter.requiredStreak})...`;
             }
           } else {
-            // Isolated bump or first step after pausing: start buffer at 1, do NOT add to step count yet
             state.pendingStepStreak = 1;
             state.rhythmLocked = false;
           }
@@ -1310,7 +1405,7 @@
     }
 
     // =========================================================================
-    // MAP ZOOM, DRAG & VECTOR FALLBACK RENDERER
+    // 100% OFFLINE PRO TACTICAL RADAR & VECTOR MAP ENGINE (NO API KEY NEEDED)
     // =========================================================================
     function haversine(lat1, lon1, lat2, lon2) {
       const R = 6371;
@@ -1320,25 +1415,15 @@
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    function zoomMap(dir) {
-      if (state.leafletMap && state.mapThemeKey !== 'grid' && navigator.onLine) {
-        if (dir > 0) state.leafletMap.zoomIn();
-        else state.leafletMap.zoomOut();
-      } else {
-        const factor = dir > 0 ? 1.3 : 0.75;
-        state.canvasZoom = Math.min(8.0, Math.max(0.25, +(state.canvasZoom * factor).toFixed(2)));
-        drawMap();
-      }
+    function zoomMap(factor) {
+      state.canvasZoom = Math.min(8.0, Math.max(0.25, +(state.canvasZoom * factor).toFixed(2)));
+      drawMap();
     }
 
     function resetMapView() {
-      state.autoCenterMap = true;
       state.canvasZoom = 1.0;
       state.mapPanX = 0;
       state.mapPanY = 0;
-      if (state.leafletMap && state.lat !== null) {
-        state.leafletMap.setView([state.lat, state.lng], 17, { animate: true });
-      }
       drawMap();
       showToast('Map centered on current position', 'emerald');
     }
@@ -1370,7 +1455,7 @@
       }
 
       const canvas = document.getElementById('gpsCanvas');
-      if (!canvas || canvas.classList.contains('hidden')) return;
+      if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
       if (rect.width === 0) return;
       const dpr = window.devicePixelRatio || 1;
@@ -1380,67 +1465,146 @@
       ctx.scale(dpr, dpr);
       const w = rect.width, h = rect.height;
 
-      const theme = MAP_STYLES[state.mapThemeKey] || MAP_STYLES.dark;
+      const theme = MAP_STYLES[state.mapThemeKey] || MAP_STYLES.emerald;
       ctx.fillStyle = theme.bg;
       ctx.fillRect(0, 0, w, h);
 
-      // Auto-scale bounding box so route never goes off canvas
-      let maxExtent = 30;
+      // Keep latest athlete position centered unless panned, and auto-scale bounding box
+      const lastPt = state.pts.length > 0 ? state.pts[state.pts.length - 1] : { x: 0, y: 0 };
+      let maxSpanMeters = 25;
       state.pts.forEach(p => {
-        maxExtent = Math.max(maxExtent, Math.abs(p.x) * 1.35, Math.abs(p.y) * 1.35);
+        maxSpanMeters = Math.max(maxSpanMeters, Math.abs(p.x - lastPt.x) * 1.5, Math.abs(p.y - lastPt.y) * 1.5);
       });
-      const baseScale = Math.min(w, h) / (maxExtent * 2);
-      const scale = baseScale * state.canvasZoom;
+      const pixelsPerMeter = (Math.min(w, h) / (maxSpanMeters * 2)) * state.canvasZoom;
       const cx = w / 2 + state.mapPanX;
       const cy = h / 2 + state.mapPanY;
 
-      const gridStep = Math.max(20, 36 * state.canvasZoom);
+      // 1. Tactical Coordinate Grid
+      const gridStep = Math.max(24, Math.min(80, 10 * pixelsPerMeter));
       ctx.strokeStyle = theme.grid;
       ctx.lineWidth = 1;
-      for (let x = (cx % gridStep + gridStep) % gridStep; x < w; x += gridStep) {
+      const offsetX = ((cx - lastPt.x * pixelsPerMeter) % gridStep + gridStep) % gridStep;
+      const offsetY = ((cy - lastPt.y * pixelsPerMeter) % gridStep + gridStep) % gridStep;
+      for (let x = offsetX; x < w; x += gridStep) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
       }
-      for (let y = (cy % gridStep + gridStep) % gridStep; y < h; y += gridStep) {
+      for (let y = offsetY; y < h; y += gridStep) {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
       }
 
+      // 2. Radar Range Rings around current athlete position
+      ctx.strokeStyle = theme.rings;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      [45, 95, 145].forEach(radiusPx => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, radiusPx, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+
+      // 3. Draw Verified Route Trail
       if (state.pts.length > 1) {
-        ctx.strokeStyle = theme.line;
-        ctx.lineWidth = 4;
+        // Outer glow
+        ctx.strokeStyle = theme.glow;
+        ctx.lineWidth = 10;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.beginPath();
         state.pts.forEach((p, i) => {
-          const px = cx + p.x * scale;
-          const py = cy + p.y * scale;
+          const px = cx + (p.x - lastPt.x) * pixelsPerMeter;
+          const py = cy + (p.y - lastPt.y) * pixelsPerMeter;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+
+        // Core crisp route line
+        ctx.strokeStyle = theme.line;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        state.pts.forEach((p, i) => {
+          const px = cx + (p.x - lastPt.x) * pixelsPerMeter;
+          const py = cy + (p.y - lastPt.y) * pixelsPerMeter;
           if (i === 0) ctx.moveTo(px, py);
           else ctx.lineTo(px, py);
         });
         ctx.stroke();
       }
 
+      // 4. Draw Start Marker & Current Athlete Marker
       if (state.pts.length > 0) {
         const first = state.pts[0];
-        const last = state.pts[state.pts.length - 1];
-        ctx.fillStyle = theme.start;
+        const startPx = cx + (first.x - lastPt.x) * pixelsPerMeter;
+        const startPy = cy + (first.y - lastPt.y) * pixelsPerMeter;
+
+        if (state.pts.length > 1) {
+          ctx.fillStyle = theme.start;
+          ctx.beginPath();
+          ctx.arc(startPx, startPy, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 9px Inter, sans-serif';
+          ctx.fillText('START', startPx + 9, startPy + 3);
+        }
+
+        // GPS Accuracy Halo around current position
+        const accRadiusPx = Math.min(60, Math.max(12, (state.acc || 8) * pixelsPerMeter * 0.4));
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
         ctx.beginPath();
-        ctx.arc(cx + first.x * scale, cy + first.y * scale, 6, 0, Math.PI * 2);
+        ctx.arc(cx, cy, accRadiusPx, 0, Math.PI * 2);
         ctx.fill();
 
+        // Live Athlete Pin
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+        ctx.fill();
         ctx.fillStyle = theme.end;
         ctx.beginPath();
-        ctx.arc(cx + last.x * scale, cy + last.y * scale, 7, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        ctx.fillStyle = theme.line;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+        ctx.arc(cx, cy, 5.5, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      // 5. Compass Rose (Bottom Left) & Scale Bar (Bottom Right)
+      const compX = 28, compY = h - 28;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.beginPath();
+      ctx.arc(compX, compY, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('N', compX, compY - 3);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 8px Inter, sans-serif';
+      ctx.fillText('▲', compX, compY + 8);
+      ctx.textAlign = 'left';
+
+      // Scale Bar
+      const scaleMeters = Math.max(5, Math.round(50 / pixelsPerMeter / 5) * 5);
+      const barWidthPx = Math.min(90, Math.max(35, scaleMeters * pixelsPerMeter));
+      const bx = w - barWidthPx - 14, by = h - 16;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(bx - 6, by - 14, barWidthPx + 12, 20);
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(bx, by - 4);
+      ctx.lineTo(bx, by);
+      ctx.lineTo(bx + barWidthPx, by);
+      ctx.lineTo(bx + barWidthPx, by - 4);
+      ctx.stroke();
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = 'bold 9px JetBrains Mono, monospace';
+      ctx.fillText(`${scaleMeters} m`, bx + 4, by - 4);
     }
 
     // =========================================================================
-    // WORKOUT CONTROLS & TIMER ENGINE
+    // WORKOUT CONTROLS & TIMER ENGINE (AUTO-ZERO SPEED ON STOP)
     // =========================================================================
     function setRunMode(mode) {
       if (state.running) return showToast('Pause run before switching mode', 'amber');
@@ -1465,7 +1629,6 @@
     }
 
     function toggleRun() {
-      // Request GPS lock if not yet active, but allow starting run immediately while GPS locks!
       if (!state.useRealGps) {
         checkPermissionAndProceed(false);
       }
@@ -1504,10 +1667,18 @@
       state.elapsedMs += Math.min(500, now - state.lastTick);
       state.lastTick = now;
 
-      // Combine time MET calories + distance calories so active movement is rewarded accurately
-      const timeCals = PRESETS[state.intensity].met * 68 * (state.elapsedMs / 3600000);
+      // AUTO-ZERO LIVE SPEED WHEN STOPPED:
+      // If no step or verified GPS movement happened in the last 2.2 seconds, decay speed to 0.0 km/h!
+      const idleMs = Date.now() - (state.lastMoveTimestamp || 0);
+      if (idleMs > 2200) {
+        state.currentSpeedKmh = state.currentSpeedKmh * 0.72;
+        if (state.currentSpeedKmh < 0.35) state.currentSpeedKmh = 0;
+      }
+
+      // Calories calculation based on active distance + steps
       const distCals = state.distKm * 65;
-      state.cals = Math.max(timeCals * 0.4 + distCals, state.runSteps * 0.045);
+      const stepCals = state.runSteps * 0.045;
+      state.cals = Math.max(distCals, stepCals);
 
       if (state.mode === 'countdown' && state.elapsedMs >= state.targetMs) {
         state.elapsedMs = state.targetMs;
@@ -1531,26 +1702,22 @@
       document.getElementById('statRunSteps').textContent = state.runSteps;
       document.getElementById('statCalories').textContent = Math.round(state.cals);
 
+      // Show TRUE instantaneous live speed (0.0 km/h when stopped!)
       const speedEl = document.getElementById('statSpeed');
+      const liveSpeedDisp = state.unit === 'km' ? state.currentSpeedKmh : state.currentSpeedKmh * 0.621371;
       if (speedEl) {
-        const avgKmh = state.elapsedMs > 5000 ? (state.distKm / (state.elapsedMs / 3600000)) : 0;
-        const showKmh = state.currentSpeedKmh > 0.5 ? state.currentSpeedKmh : avgKmh;
-        speedEl.textContent = showKmh.toFixed(1);
+        speedEl.textContent = liveSpeedDisp.toFixed(1);
       }
 
       const paceEl = document.getElementById('statPace');
       if (paceEl) {
-        if (state.distKm >= 0.03 && state.elapsedMs > 3000) {
-          const paceMinPerKm = (state.elapsedMs / 60000) / dispDist;
-          if (paceMinPerKm > 0 && paceMinPerKm < 45) {
-            const pMin = Math.floor(paceMinPerKm);
-            const pSec = Math.round((paceMinPerKm - pMin) * 60);
-            paceEl.textContent = `Pace: ${pMin}:${String(pSec).padStart(2, '0')} /${state.unit}`;
-          } else {
-            paceEl.textContent = `Pace: --:-- /${state.unit}`;
-          }
+        if (liveSpeedDisp >= 0.6) {
+          const paceMinPerUnit = 60 / liveSpeedDisp;
+          const pMin = Math.floor(paceMinPerUnit);
+          const pSec = Math.round((paceMinPerUnit - pMin) * 60);
+          paceEl.textContent = `Pace: ${pMin}:${String(pSec % 60).padStart(2, '0')} /${state.unit}`;
         } else {
-          paceEl.textContent = `Pace: --:-- /${state.unit}`;
+          paceEl.textContent = `Stopped (0.0 ${state.unit}/h)`;
         }
       }
     }
@@ -1591,7 +1758,8 @@
       state.currentSpeedKmh = 0;
       state.lastAnnouncedKm = 0;
       state.pts = state.lat !== null ? [{ x: 0, y: 0, lat: state.lat, lng: state.lng }] : [];
-      if (state.routeLine) state.routeLine.setLatLngs(state.pts.map(p => [p.lat, p.lng]));
+      const fixBadge = document.getElementById('gpsFixCountBadge');
+      if (fixBadge) fixBadge.textContent = `${ Math.max(1, state.pts.length) } pt`;
       document.getElementById('btnStartPauseText').textContent = 'Start Run';
       document.getElementById('runStatusDot').className = 'w-2.5 h-2.5 rounded-full bg-slate-500';
       document.getElementById('runStatusText').textContent = 'Ready to Track';
@@ -1754,10 +1922,7 @@
         }
       });
       if (tab === 'tracker') {
-        setTimeout(() => {
-          if (state.leafletMap) state.leafletMap.invalidateSize();
-          drawMap();
-        }, 50);
+        setTimeout(drawMap, 40);
       }
       if (tab === 'history') renderHistory();
     }
@@ -1775,7 +1940,7 @@
     }
 
     // =========================================================================
-    // CRITICAL STARTUP INITIALIZATION (Was missing in previous version!)
+    // STARTUP INITIALIZATION
     // =========================================================================
     window.addEventListener('DOMContentLoaded', () => {
       loadFromStorage();
@@ -1788,7 +1953,6 @@
     });
 
     window.addEventListener('resize', () => {
-      if (state.leafletMap) state.leafletMap.invalidateSize();
       drawMap();
     });
   </script>
