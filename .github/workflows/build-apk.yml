@@ -52,7 +52,7 @@ jobs:
 
     - name: Create Fixed Keystore & Gradle Project Files
       run: |
-        # Deterministic keystore taaki har baar bina uninstall kiye app seedha UPDATE ho sake
+        # Deterministic keystore so every new APK updates smoothly without uninstalling
         keytool -genkey -v -keystore openstride.keystore -alias openstride -keyalg RSA -keysize 2048 -validity 10000 -storepass openstride123 -keypass openstride123 -dname "CN=Rahul Kumar, OU=OpenStride, O=OpenStride, L=Dumka, S=Jharkhand, C=IN"
 
         cat << 'EOF' > settings.gradle
@@ -84,8 +84,8 @@ jobs:
                 applicationId "com.etrahul.openstride"
                 minSdk 24
                 targetSdk 34
-                versionCode 2
-                versionName "3.0"
+                versionCode 4
+                versionName "4.0"
             }
             signingConfigs {
                 fixedConfig {
@@ -113,13 +113,24 @@ jobs:
 
         import android.Manifest;
         import android.app.Activity;
+        import android.content.Context;
         import android.content.Intent;
+        import android.content.SharedPreferences;
         import android.content.pm.PackageManager;
+        import android.hardware.Sensor;
+        import android.hardware.SensorEvent;
+        import android.hardware.SensorEventListener;
+        import android.hardware.SensorManager;
+        import android.location.Location;
+        import android.location.LocationListener;
+        import android.location.LocationManager;
         import android.net.Uri;
         import android.os.Build;
         import android.os.Bundle;
         import android.os.Environment;
         import android.provider.Settings;
+        import android.speech.tts.TextToSpeech;
+        import android.view.WindowManager;
         import android.webkit.GeolocationPermissions;
         import android.webkit.JavascriptInterface;
         import android.webkit.ValueCallback;
@@ -132,16 +143,73 @@ jobs:
         import java.io.FileOutputStream;
         import java.util.ArrayList;
         import java.util.List;
+        import java.util.Locale;
 
-        public class MainActivity extends Activity {
+        public class MainActivity extends Activity implements SensorEventListener {
             private WebView webView;
             private ValueCallback<Uri[]> filePathCallback;
+            private SharedPreferences prefs;
+            private TextToSpeech tts;
+            private boolean ttsReady = false;
+            private LocationManager locationManager;
+            private SensorManager sensorManager;
+            private Sensor stepDetectorSensor;
+            private Sensor stepCounterSensor;
+            private int lastStepCounterVal = -1;
+
+            private static final String PREFS_NAME = "OpenStrideNativePrefs";
             private static final int FILE_CHOOSER_RESULT_CODE = 1001;
             private static final int PERMISSION_REQUEST_CODE = 1002;
+
+            private final LocationListener gpsListener = new LocationListener() {
+                @Override
+                public void onLocationChanged(Location loc) {
+                    if (loc == null || webView == null) return;
+                    final double lat = loc.getLatitude();
+                    final double lng = loc.getLongitude();
+                    final float acc = loc.hasAccuracy() ? loc.getAccuracy() : 10.0f;
+                    final float spd = loc.hasSpeed() ? loc.getSpeed() : 0.0f;
+                    runOnUiThread(() -> {
+                        if (webView != null) {
+                            String js = String.format(Locale.US,
+                                "if(window.onNativeGpsUpdate) window.onNativeGpsUpdate(%.7f, %.7f, %.2f, %.2f);",
+                                lat, lng, acc, spd);
+                            webView.evaluateJavascript(js, null);
+                        }
+                    });
+                }
+                @Override public void onStatusChanged(String provider, int status, Bundle extras) {}
+                @Override public void onProviderEnabled(String provider) {}
+                @Override public void onProviderDisabled(String provider) {}
+            };
 
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
+                // Keep screen awake during runs so GPS & Pedometer never sleep
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+
+                // Initialize Native Android Text-To-Speech for AI Voice Coach
+                tts = new TextToSpeech(this, status -> {
+                    if (status == TextToSpeech.SUCCESS) {
+                        int res = tts.setLanguage(Locale.US);
+                        if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            tts.setLanguage(Locale.getDefault());
+                        }
+                        tts.setSpeechRate(1.0f);
+                        ttsReady = true;
+                    }
+                });
+
+                locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+                if (sensorManager != null) {
+                    stepDetectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
+                    stepCounterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
+                }
+
                 webView = new WebView(this);
                 WebSettings settings = webView.getSettings();
                 settings.setJavaScriptEnabled(true);
@@ -179,8 +247,65 @@ jobs:
 
                 setContentView(webView);
                 requestRequiredPermissions();
+                startHardwareStepSensors();
                 webView.loadUrl("file:///android_asset/public/index.html");
             }
+
+            private void startHardwareStepSensors() {
+                if (sensorManager == null) return;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    if (checkSelfPermission(Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) {
+                        return;
+                    }
+                }
+                if (stepDetectorSensor != null) {
+                    sensorManager.registerListener(this, stepDetectorSensor, SensorManager.SENSOR_DELAY_FASTEST);
+                } else if (stepCounterSensor != null) {
+                    sensorManager.registerListener(this, stepCounterSensor, SensorManager.SENSOR_DELAY_UI);
+                }
+            }
+
+            private void startNativeLocationUpdates() {
+                if (locationManager == null) return;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        return;
+                    }
+                }
+                try {
+                    if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 1.0f, gpsListener);
+                        Location lastGps = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                        if (lastGps != null) gpsListener.onLocationChanged(lastGps);
+                    }
+                    if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000L, 2.0f, gpsListener);
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+                if (event == null || event.sensor == null || webView == null) return;
+                if (event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
+                    final int steps = Math.max(1, (int) event.values[0]);
+                    runOnUiThread(() -> webView.evaluateJavascript("if(window.onNativeStepDetected) window.onNativeStepDetected(" + steps + ");", null));
+                } else if (event.sensor.getType() == Sensor.TYPE_STEP_COUNTER) {
+                    int total = (int) event.values[0];
+                    if (lastStepCounterVal < 0) {
+                        lastStepCounterVal = total;
+                    } else if (total > lastStepCounterVal) {
+                        final int delta = total - lastStepCounterVal;
+                        lastStepCounterVal = total;
+                        if (delta > 0 && delta < 50) {
+                            runOnUiThread(() -> webView.evaluateJavascript("if(window.onNativeStepDetected) window.onNativeStepDetected(" + delta + ");", null));
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
             private void requestRequiredPermissions() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -198,7 +323,13 @@ jobs:
                     }
                     if (!permissionsNeeded.isEmpty()) {
                         requestPermissions(permissionsNeeded.toArray(new String[0]), PERMISSION_REQUEST_CODE);
+                    } else {
+                        startNativeLocationUpdates();
+                        startHardwareStepSensors();
                     }
+                } else {
+                    startNativeLocationUpdates();
+                    startHardwareStepSensors();
                 }
             }
 
@@ -206,16 +337,36 @@ jobs:
             public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
                 super.onRequestPermissionsResult(requestCode, permissions, grantResults);
                 if (requestCode == PERMISSION_REQUEST_CODE) {
-                    webView. evaluateJavascript("if(window.checkPermissionAndProceed) window.checkPermissionAndProceed();", null);
+                    startNativeLocationUpdates();
+                    startHardwareStepSensors();
+                    if (webView != null) {
+                        webView.evaluateJavascript("if(window.checkPermissionAndProceed) window.checkPermissionAndProceed(true);", null);
+                    }
                 }
             }
 
             @Override
             protected void onResume() {
                 super.onResume();
+                startNativeLocationUpdates();
+                startHardwareStepSensors();
                 if (webView != null) {
-                    webView.evaluateJavascript("if(window.checkPermissionAndProceed) window.checkPermissionAndProceed();", null);
+                    webView.evaluateJavascript("if(window.checkPermissionAndProceed) window.checkPermissionAndProceed(false);", null);
                 }
+            }
+
+            @Override
+            protected void onDestroy() {
+                if (locationManager != null) {
+                    try { locationManager.removeUpdates(gpsListener); } catch (Exception ignored) {}
+                }
+                if (sensorManager != null) {
+                    try { sensorManager.unregisterListener(this); } catch (Exception ignored) {}
+                }
+                if (tts != null) {
+                    try { tts.stop(); tts.shutdown(); } catch (Exception ignored) {}
+                }
+                super.onDestroy();
             }
 
             @Override
@@ -247,6 +398,37 @@ jobs:
 
             public class WebAppInterface {
                 @JavascriptInterface
+                public void saveStorage(String key, String value) {
+                    if (prefs != null && key != null) {
+                        prefs.edit().putString(key, value != null ? value : "").apply();
+                    }
+                }
+
+                @JavascriptInterface
+                public String getStorage(String key) {
+                    if (prefs != null && key != null && prefs.contains(key)) {
+                        return prefs.getString(key, "");
+                    }
+                    return "";
+                }
+
+                @JavascriptInterface
+                public void speak(String text) {
+                    if (tts != null && ttsReady && text != null && !text.trim().isEmpty()) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "openstride_utterance");
+                        } else {
+                            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+                        }
+                    }
+                }
+
+                @JavascriptInterface
+                public void startNativeGps() {
+                    runOnUiThread(() -> startNativeLocationUpdates());
+                }
+
+                @JavascriptInterface
                 public void openAppSettings() {
                     Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                     Uri uri = Uri.fromParts("package", getPackageName(), null);
@@ -257,7 +439,6 @@ jobs:
                 @JavascriptInterface
                 public void closeApp() {
                     finishAffinity();
-                    System.exit(0);
                 }
 
                 @JavascriptInterface
@@ -293,6 +474,7 @@ jobs:
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
             <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
@@ -302,6 +484,7 @@ jobs:
                 android:label="OpenStride"
                 android:icon="@drawable/app_icon"
                 android:roundIcon="@drawable/app_icon"
+                android:usesCleartextTraffic="true"
                 android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
                 <activity 
                     android:name=".MainActivity" 
