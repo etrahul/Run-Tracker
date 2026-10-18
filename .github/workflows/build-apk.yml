@@ -50,10 +50,14 @@ jobs:
         fi
         if [ -f manifest.json ]; then cp manifest.json app/src/main/assets/public/; fi
 
-    - name: Create Fixed Keystore & Gradle Project Files
+    - name: Restore Permanent Keystore & Gradle Project Files
       run: |
-        # Deterministic keystore so every new APK updates smoothly without uninstalling
-        keytool -genkey -v -keystore openstride.keystore -alias openstride -keyalg RSA -keysize 2048 -validity 10000 -storepass openstride123 -keypass openstride123 -dname "CN=Rahul Kumar, OU=OpenStride, O=OpenStride, L=Dumka, S=Jharkhand, C=IN"
+        # PERMANENT FIXED BINARY KEYSTORE:
+        # Pehle keytool -genkey har build mein naya random certificate banata tha jisse "package conflicts with an existing package" aata tha.
+        # Ab ye fixed binary keystore har build mein 100% same SHA-256 signature rakhega!
+        cat << 'B64EOF' | tr -d '\n\r ' | base64 -d > openstride.keystore
+        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
+        B64EOF
 
         cat << 'EOF' > settings.gradle
         pluginManagement {
@@ -73,7 +77,7 @@ jobs:
         include ':app'
         EOF
         
-        cat << 'EOF' > app/build.gradle
+        cat << EOF > app/build.gradle
         plugins {
             id 'com.android.application' version '8.2.1'
         }
@@ -84,24 +88,27 @@ jobs:
                 applicationId "com.etrahul.openstride"
                 minSdk 24
                 targetSdk 34
-                versionCode 5
-                versionName "5.0"
+                versionCode $((100 + ${{ github.run_number }}))
+                versionName "5.0.${{ github.run_number }}"
             }
             signingConfigs {
-                fixedConfig {
+                releaseConfig {
                     storeFile file("../openstride.keystore")
                     storePassword "openstride123"
                     keyAlias "openstride"
                     keyPassword "openstride123"
+                    v1SigningEnabled true
+                    v2SigningEnabled true
                 }
             }
             buildTypes {
                 debug {
-                    signingConfig signingConfigs.fixedConfig
+                    signingConfig signingConfigs.releaseConfig
                 }
                 release {
-                    signingConfig signingConfigs.fixedConfig
+                    signingConfig signingConfigs.releaseConfig
                     minifyEnabled false
+                    debuggable false
                 }
             }
         }
@@ -166,7 +173,6 @@ jobs:
                 @Override
                 public void onLocationChanged(Location loc) {
                     if (loc == null || webView == null) return;
-                    // Once genuine GPS satellite lock is achieved, ignore coarse cell-tower network jumps
                     if (LocationManager.GPS_PROVIDER.equals(loc.getProvider())) {
                         hasSatelliteLock = true;
                     } else if (hasSatelliteLock && loc.getAccuracy() > 18.0f) {
@@ -193,12 +199,10 @@ jobs:
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
-                // Keep screen awake during runs so GPS & Pedometer never sleep
                 getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
                 prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
-                // Initialize Native Android Text-To-Speech for 100% Offline AI Voice Coach
                 tts = new TextToSpeech(this, status -> {
                     if (status == TextToSpeech.SUCCESS) {
                         int res = tts.setLanguage(Locale.US);
@@ -228,7 +232,6 @@ jobs:
                 settings.setLoadWithOverviewMode(true);
                 settings.setUseWideViewPort(true);
                 settings.setMediaPlaybackRequiresUserGesture(false);
-                settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
 
                 webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
                 webView.setWebViewClient(new WebViewClient());
@@ -481,8 +484,6 @@ jobs:
 
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <uses-permission android:name="android.permission.INTERNET" />
-            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
             <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
@@ -492,7 +493,6 @@ jobs:
                 android:label="OpenStride"
                 android:icon="@drawable/app_icon"
                 android:roundIcon="@drawable/app_icon"
-                android:usesCleartextTraffic="true"
                 android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
                 <activity 
                     android:name=".MainActivity" 
@@ -507,13 +507,13 @@ jobs:
         </manifest>
         EOF
 
-    - name: Generate Wrapper & Build APK
+    - name: Generate Wrapper & Build Release APK
       run: |
         unset ANDROID_SDK_ROOT
         gradle wrapper
         chmod +x gradlew
-        ./gradlew assembleDebug -x lint
-        cp app/build/outputs/apk/debug/app-debug.apk OpenStride.apk
+        ./gradlew assembleRelease -x lint
+        cp app/build/outputs/apk/release/app-release.apk OpenStride.apk
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
