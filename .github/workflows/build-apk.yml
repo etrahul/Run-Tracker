@@ -7,14 +7,14 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Set up JDK 17
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5
       with:
         distribution: 'temurin'
         java-version: '17'
@@ -84,8 +84,8 @@ jobs:
                 applicationId "com.etrahul.openstride"
                 minSdk 24
                 targetSdk 34
-                versionCode 4
-                versionName "4.0"
+                versionCode 5
+                versionName "5.0"
             }
             signingConfigs {
                 fixedConfig {
@@ -152,6 +152,7 @@ jobs:
             private TextToSpeech tts;
             private boolean ttsReady = false;
             private LocationManager locationManager;
+            private boolean hasSatelliteLock = false;
             private SensorManager sensorManager;
             private Sensor stepDetectorSensor;
             private Sensor stepCounterSensor;
@@ -165,6 +166,12 @@ jobs:
                 @Override
                 public void onLocationChanged(Location loc) {
                     if (loc == null || webView == null) return;
+                    // Once genuine GPS satellite lock is achieved, ignore coarse cell-tower network jumps
+                    if (LocationManager.GPS_PROVIDER.equals(loc.getProvider())) {
+                        hasSatelliteLock = true;
+                    } else if (hasSatelliteLock && loc.getAccuracy() > 18.0f) {
+                        return;
+                    }
                     final double lat = loc.getLatitude();
                     final double lng = loc.getLongitude();
                     final float acc = loc.hasAccuracy() ? loc.getAccuracy() : 10.0f;
@@ -191,7 +198,7 @@ jobs:
 
                 prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
-                // Initialize Native Android Text-To-Speech for AI Voice Coach
+                // Initialize Native Android Text-To-Speech for 100% Offline AI Voice Coach
                 tts = new TextToSpeech(this, status -> {
                     if (status == TextToSpeech.SUCCESS) {
                         int res = tts.setLanguage(Locale.US);
@@ -221,6 +228,7 @@ jobs:
                 settings.setLoadWithOverviewMode(true);
                 settings.setUseWideViewPort(true);
                 settings.setMediaPlaybackRequiresUserGesture(false);
+                settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
 
                 webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
                 webView.setWebViewClient(new WebViewClient());
@@ -274,12 +282,12 @@ jobs:
                 }
                 try {
                     if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 1.0f, gpsListener);
+                        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 1.5f, gpsListener);
                         Location lastGps = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                         if (lastGps != null) gpsListener.onLocationChanged(lastGps);
                     }
-                    if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000L, 2.0f, gpsListener);
+                    if (!hasSatelliteLock && locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 3000L, 5.0f, gpsListener);
                     }
                 } catch (Exception ignored) {}
             }
